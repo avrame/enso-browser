@@ -25,6 +25,13 @@ public struct SpacesFetchResult: Sendable {
     public let snapshot: SpacesSnapshot
     public let engineVersion: Int
     public let fetchedAt: Date
+
+    public init(records: [SpacesRecord], snapshot: SpacesSnapshot, engineVersion: Int, fetchedAt: Date) {
+        self.records = records
+        self.snapshot = snapshot
+        self.engineVersion = engineVersion
+        self.fetchedAt = fetchedAt
+    }
 }
 
 /// Reads Zen's `spaces` collection. Read-only: nothing here writes to the

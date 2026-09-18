@@ -51,13 +51,6 @@ struct NavigationBarState: StateType, Equatable {
         a11yLabel: .TabToolbarHomeAccessibilityLabel,
         a11yId: AccessibilityIdentifiers.Toolbar.homeButton)
 
-    private static let spacesAction = ToolbarActionConfiguration(
-        actionType: .spaces,
-        iconName: "square.stack",
-        isEnabled: true,
-        a11yLabel: "Spaces",
-        a11yId: AccessibilityIdentifiers.Toolbar.spacesButton)
-
     private static let newTabAction = ToolbarActionConfiguration(
         actionType: .newTab,
         iconName: StandardImageIdentifiers.Large.plus,
@@ -261,7 +254,7 @@ struct NavigationBarState: StateType, Equatable {
         switch layout {
         case .version1, .none:
             actions.append(middleAction)
-            actions.append(spacesAction)
+            actions.append(.zenSpaces)
             actions.append(menuAction(iconName: StandardImageIdentifiers.Large.moreHorizontalRound,
                                       showWarningBadge: showWarningBadge))
             actions.append(tabsAction(iconName: iconName,
@@ -273,7 +266,7 @@ struct NavigationBarState: StateType, Equatable {
             )
         case .version2:
             actions.append(middleAction)
-            actions.append(spacesAction)
+            actions.append(.zenSpaces)
             actions.append(tabsAction(iconName: iconName,
                                       numberOfTabs: numberOfTabs,
                                       isPrivateMode: toolbarState.isPrivateMode,

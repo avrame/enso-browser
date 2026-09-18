@@ -95,9 +95,9 @@ protocol BrowserNavigationHandler: AnyObject, QRCodeNavigationHandler {
     @MainActor
     func showMainMenu()
 
-    /// Shows the Zen spaces sheet
+    /// Shows the Zen spaces sheet, as a popover from `sourceView` on iPad
     @MainActor
-    func showZenSpaces()
+    func showZenSpaces(sourceView: UIView?)
 
     /// Shows the toolbar's search engine selection bottom sheet (iPhone) or popup (iPad)
     @MainActor

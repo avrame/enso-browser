@@ -978,6 +978,7 @@ struct AddressBarState: StateType, Sendable, Equatable {
         case .version1, .none:
             actions.append(
                 contentsOf: [
+                    .zenSpaces,
                     menuAction(iconName: menuIcon, showWarningBadge: showWarningBadge),
                     tabsAction(
                         iconName: iconName,
@@ -1000,6 +1001,7 @@ struct AddressBarState: StateType, Sendable, Equatable {
                         previousTabScreenshot: previousTabScreenshot,
                         nextTabScreenshot: nextTabScreenshot
                     ),
+                    .zenSpaces,
                     menuAction(iconName: menuIcon, showWarningBadge: showWarningBadge)
                 ]
             )

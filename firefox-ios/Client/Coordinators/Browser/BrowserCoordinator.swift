@@ -575,15 +575,22 @@ final class BrowserCoordinator: BaseCoordinator,
         mainMenuCoordinator.startWithNavController()
     }
 
-    func showZenSpaces() {
+    func showZenSpaces(sourceView: UIView?) {
         let sheet = ZenSpacesSheet(store: ZenSpacesService.store) { [weak self] pinned in
             self?.router.dismiss(animated: true) {
                 self?.openZenSpaceTab(pinned)
             }
         }
         let controller = UIHostingController(rootView: sheet)
-        controller.sheetPresentationController?.detents = [.medium(), .large()]
-        controller.sheetPresentationController?.prefersGrabberVisible = true
+        if controller.shouldUseiPadSetup(), let sourceView {
+            controller.modalPresentationStyle = .popover
+            controller.preferredContentSize = CGSize(width: 420, height: 640)
+            controller.popoverPresentationController?.sourceView = sourceView
+            controller.popoverPresentationController?.canOverlapSourceViewRect = false
+        } else {
+            controller.sheetPresentationController?.detents = [.medium(), .large()]
+            controller.sheetPresentationController?.prefersGrabberVisible = true
+        }
         present(controller)
     }
 

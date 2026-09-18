@@ -133,7 +133,7 @@ class MockBrowserCoordinator: BrowserNavigationHandler,
         showMainMenuCalled += 1
     }
 
-    func showZenSpaces() {
+    func showZenSpaces(sourceView: UIView?) {
         showZenSpacesCalled += 1
     }
 

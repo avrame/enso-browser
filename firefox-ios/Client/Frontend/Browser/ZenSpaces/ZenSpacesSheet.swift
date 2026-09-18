@@ -12,6 +12,10 @@ struct ZenSpacesSheet: View {
     let onOpen: (TabRecord) -> Void
 
     @AppStorage("zenSpaces.selectedSpace") private var selectedSpace = ""
+    @State private var renaming: SpaceRecord?
+    @State private var draftName = ""
+    @State private var isSaving = false
+    @State private var writeError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,7 +29,57 @@ struct ZenSpacesSheet: View {
             statusLine
         }
         .background(Color(uiColor: .systemGroupedBackground))
+        // The rename alert's keyboard would squeeze the paging TabView to zero
+        // height, which snaps it back to the first space.
+        .ignoresSafeArea(.keyboard)
         .task { await store.refresh() }
+        .alert("Rename Space", isPresented: isPresent($renaming), presenting: renaming) { space in
+            TextField("Name", text: $draftName)
+            Button("Cancel", role: .cancel) {}
+            Button("Rename") { save(space) }
+                .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        } message: { _ in
+            Text("The new name also appears in Zen on your other devices.")
+        }
+        .alert("Couldn't Rename", isPresented: isPresent($writeError), presenting: writeError) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { message in
+            Text(message)
+        }
+    }
+
+    // MARK: Renaming
+
+    private func startRenaming(_ space: SpaceRecord) {
+        draftName = space.name
+        renaming = space
+    }
+
+    /// Nothing changes locally until the server has accepted the new name.
+    private func save(_ space: SpaceRecord) {
+        let name = draftName
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                try await store.renameSpace(space.uuid, to: name)
+            } catch {
+                writeError = Self.message(for: error)
+            }
+        }
+    }
+
+    private static func message(for error: Error) -> String {
+        switch error {
+        case let error as ZenSpacesWriteError: return error.description
+        case let error as ZenSpacesAuthError: return error.description
+        case let error as SyncStorageError: return error.description
+        default: return error.localizedDescription
+        }
+    }
+
+    private func isPresent<Value>(_ value: Binding<Value?>) -> Binding<Bool> {
+        Binding(get: { value.wrappedValue != nil }, set: { if !$0 { value.wrappedValue = nil } })
     }
 
     // MARK: Essentials
@@ -61,6 +115,7 @@ struct ZenSpacesSheet: View {
                 ZenSpacePage(space: space,
                              allSpaces: snapshot.spaces,
                              selection: selection,
+                             onRename: startRenaming,
                              onOpen: onOpen,
                              onRefresh: { await store.refresh() })
                     .tag(space.record.uuid)
@@ -140,6 +195,21 @@ struct ZenSpacesSheet: View {
 
     @ViewBuilder
     private var statusLine: some View {
+        if isSaving {
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.mini)
+                Text("Saving to Zen…")
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.bottom, 8)
+        } else {
+            syncStatus
+        }
+    }
+
+    @ViewBuilder
+    private var syncStatus: some View {
         switch store.status {
         case .failed(let message):
             Label(message, systemImage: "exclamationmark.triangle")
@@ -163,6 +233,7 @@ private struct ZenSpacePage: View {
     let space: SpaceNode
     let allSpaces: [SpaceNode]
     @Binding var selection: String
+    let onRename: (SpaceRecord) -> Void
     let onOpen: (TabRecord) -> Void
     let onRefresh: () async -> Void
 
@@ -203,6 +274,12 @@ private struct ZenSpacePage: View {
                     Text(ZenSpaceIcon.menuTitle(for: space.record)).tag(space.record.uuid)
                 }
             }
+            Divider()
+            Button {
+                onRename(space.record)
+            } label: {
+                Label("Rename Space…", systemImage: "pencil")
+            }
         } label: {
             HStack(spacing: 4) {
                 Text(space.record.name).font(.headline).multilineTextAlignment(.leading)
@@ -213,7 +290,7 @@ private struct ZenSpacePage: View {
             }
         }
         .accessibilityLabel("Space: \(space.record.name)")
-        .accessibilityHint("Shows all spaces")
+        .accessibilityHint("Shows all spaces and space actions")
     }
 }
 

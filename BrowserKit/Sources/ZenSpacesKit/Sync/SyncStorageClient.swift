@@ -43,12 +43,17 @@ public struct URLSessionTransport: HTTPTransport {
 public enum SyncStorageError: Error, Equatable, CustomStringConvertible {
     case tokenserver(status: Int)
     case storage(status: Int, path: String)
+    case notFound(path: String)
+    /// A conditional write lost to a newer server copy; nothing was written.
+    case modifiedSince(path: String)
     case malformedResponse(String)
 
     public var description: String {
         switch self {
         case .tokenserver(let status): return "Tokenserver returned HTTP \(status)"
         case .storage(let status, let path): return "Sync storage returned HTTP \(status) for \(path)"
+        case .notFound(let path): return "\(path) is not on the server"
+        case .modifiedSince(let path): return "\(path) changed on the server while it was being written"
         case .malformedResponse(let what): return "Malformed response: \(what)"
         }
     }
@@ -128,6 +133,39 @@ public actor SyncStorageClient {
         }
     }
 
+    /// One record, decrypted, with the BSO carrying its server timestamp.
+    public func record(id: String, in collection: String) async throws -> (bso: BSO, cleartext: Data) {
+        let bundle = try await keys().bundle(for: collection)
+        let bso = try await getBSO("\(collection)/\(id)")
+        let envelope = try JSONDecoder().decode(EncryptedPayload.self, from: Data(bso.payload.utf8))
+        return (bso, try bundle.decrypt(envelope))
+    }
+
+    /// Encrypts and stores one record, only if the server copy is still the
+    /// one last modified at `ifUnmodifiedSince`; otherwise throws
+    /// `.modifiedSince` and writes nothing. Returns the new server timestamp.
+    public func put(id: String,
+                    in collection: String,
+                    cleartext: Data,
+                    ifUnmodifiedSince: Double) async throws -> Double {
+        let bundle = try await keys().bundle(for: collection)
+        let envelope = try bundle.encrypt(cleartext)
+        let payload = String(decoding: try JSONEncoder().encode(envelope), as: UTF8.self)
+        let body = try JSONEncoder().encode(["id": id, "payload": payload])
+        let condition = ["X-If-Unmodified-Since": Self.timestamp(ifUnmodifiedSince)]
+        let path = "storage/\(collection)/\(id)"
+        let (data, response) = try await send("PUT", path, query: [], body: body, headers: condition)
+        let modified = response.value(forHTTPHeaderField: "X-Last-Modified").flatMap(Double.init)
+            ?? Double(String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines))
+        guard let modified else { throw SyncStorageError.malformedResponse("PUT without a timestamp") }
+        return modified
+    }
+
+    /// Sync timestamps are decimal seconds with two fractional digits.
+    static func timestamp(_ seconds: Double) -> String {
+        String(format: "%.2f", seconds)
+    }
+
     private func keys() async throws -> CollectionKeys {
         if let collectionKeys { return collectionKeys }
         let bso = try await getBSO("crypto/keys")
@@ -146,7 +184,7 @@ public actor SyncStorageClient {
             if let offset {
                 query.append(URLQueryItem(name: "offset", value: offset))
             }
-            let (data, response) = try await get("storage/\(collection)", query: query)
+            let (data, response) = try await send("GET", "storage/\(collection)", query: query)
             result += try JSONDecoder().decode([BSO].self, from: data)
             offset = response.value(forHTTPHeaderField: "X-Weave-Next-Offset")
         } while offset != nil
@@ -154,11 +192,15 @@ public actor SyncStorageClient {
     }
 
     private func getBSO(_ path: String) async throws -> BSO {
-        let (data, _) = try await get("storage/\(path)", query: [])
+        let (data, _) = try await send("GET", "storage/\(path)", query: [])
         return try JSONDecoder().decode(BSO.self, from: data)
     }
 
-    private func get(_ path: String, query: [URLQueryItem]) async throws -> (Data, HTTPURLResponse) {
+    private func send(_ method: String,
+                      _ path: String,
+                      query: [URLQueryItem],
+                      body: Data? = nil,
+                      headers: [String: String] = [:]) async throws -> (Data, HTTPURLResponse) {
         let session = try await currentSession()
         var components = URLComponents(url: session.apiEndpoint.appendingPathComponent(path),
                                        resolvingAgainstBaseURL: false)
@@ -168,18 +210,28 @@ public actor SyncStorageClient {
         guard let url = components?.url else { throw SyncStorageError.malformedResponse("storage URL for \(path)") }
 
         var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.httpBody = body
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if body != nil {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        for (name, value) in headers {
+            request.setValue(value, forHTTPHeaderField: name)
+        }
         request.setValue(Hawk.authorizationHeader(credentials: session.credentials,
-                                                  method: "GET",
+                                                  method: method,
                                                   url: url,
                                                   timestamp: Int(Date().timeIntervalSince1970 + session.clockSkew),
                                                   nonce: Hawk.makeNonce()),
                          forHTTPHeaderField: "Authorization")
         let (data, response) = try await transport.send(request)
-        guard (200..<300).contains(response.statusCode) else {
-            throw SyncStorageError.storage(status: response.statusCode, path: path)
+        switch response.statusCode {
+        case 200..<300: return (data, response)
+        case 404: throw SyncStorageError.notFound(path: path)
+        case 412: throw SyncStorageError.modifiedSince(path: path)
+        default: throw SyncStorageError.storage(status: response.statusCode, path: path)
         }
-        return (data, response)
     }
 
     private func currentSession() async throws -> Session {

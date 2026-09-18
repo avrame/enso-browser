@@ -68,13 +68,21 @@ public final class SpacesStore: ObservableObject {
     @Published public private(set) var fetchedAt: Date?
     @Published public private(set) var status: Status = .idle
 
+    public typealias Rename = @MainActor (_ spaceUUID: String, _ name: String) async throws -> SpacesRecord
+
     private let cache: SpacesCache
     private let fetch: @MainActor () async throws -> SpacesFetchResult
+    private let rename: Rename
+    private var records: [SpacesRecord] = []
 
-    public init(cache: SpacesCache, fetch: @escaping @MainActor () async throws -> SpacesFetchResult) {
+    public init(cache: SpacesCache,
+                fetch: @escaping @MainActor () async throws -> SpacesFetchResult,
+                rename: @escaping Rename) {
         self.cache = cache
         self.fetch = fetch
+        self.rename = rename
         if let cached = cache.load() {
+            records = cached.records
             snapshot = SpacesSnapshot(records: cached.records)
             fetchedAt = cached.fetchedAt
         }
@@ -86,17 +94,45 @@ public final class SpacesStore: ObservableObject {
         status = .refreshing
         do {
             let result = try await fetch()
-            snapshot = result.snapshot
+            records = Self.keepingNewer(local: records, fetched: result.records)
+            snapshot = SpacesSnapshot(records: records)
             fetchedAt = result.fetchedAt
             status = .idle
-            try? cache.save(result.records, fetchedAt: result.fetchedAt)
+            try? cache.save(records, fetchedAt: result.fetchedAt)
         } catch {
             status = .failed(String(describing: error))
         }
     }
 
+    /// Renames on the server first; the local copy only changes once the
+    /// server accepted the write.
+    public func renameSpace(_ uuid: String, to name: String) async throws {
+        let updated = try await rename(uuid, name)
+        replace(updated)
+    }
+
+    /// A fetch that started before a local write finished must not undo it.
+    static func keepingNewer(local: [SpacesRecord], fetched: [SpacesRecord]) -> [SpacesRecord] {
+        let localByID = Dictionary(local.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return fetched.map { record in
+            guard let mine = localByID[record.id], mine.modified > record.modified else { return record }
+            return mine
+        }
+    }
+
+    private func replace(_ record: SpacesRecord) {
+        if let index = records.firstIndex(where: { $0.id == record.id }) {
+            records[index] = record
+        } else {
+            records.append(record)
+        }
+        snapshot = SpacesSnapshot(records: records)
+        try? cache.save(records, fetchedAt: fetchedAt ?? Date())
+    }
+
     /// Forgets everything, e.g. after the account signs out.
     public func reset() {
+        records = []
         cache.clear()
         snapshot = nil
         fetchedAt = nil

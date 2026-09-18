@@ -10,11 +10,11 @@ public enum SyncCryptoError: Error, Equatable {
     case badKeyLength(Int)
     case badBase64
     case hmacMismatch
-    case decryptionFailed(Int32)
+    case cryptorFailed(Int32)
 }
 
 /// The encrypted envelope of a Sync 1.5 record payload.
-public struct EncryptedPayload: Decodable, Sendable, Equatable {
+public struct EncryptedPayload: Codable, Sendable, Equatable {
     public let ciphertext: String
     public let iv: String
     public let hmac: String
@@ -73,25 +73,40 @@ public struct KeyBundle: Sendable, Equatable {
                                                      using: SymmetricKey(data: hmacKey))
         else { throw SyncCryptoError.hmacMismatch }
 
-        return try aes256CBCDecrypt(ciphertext, iv: iv)
+        return try aes256CBC(CCOperation(kCCDecrypt), ciphertext, iv: iv)
     }
 
-    private func aes256CBCDecrypt(_ ciphertext: Data, iv: Data) throws -> Data {
-        var output = Data(count: ciphertext.count + kCCBlockSizeAES128)
+    /// A fresh random IV per call; `iv` is only for tests.
+    public func encrypt(_ cleartext: Data, iv: Data? = nil) throws -> EncryptedPayload {
+        let iv = iv ?? Self.randomIV()
+        let ciphertext = try aes256CBC(CCOperation(kCCEncrypt), cleartext, iv: iv).base64EncodedString()
+        let mac = HMAC<SHA256>.authenticationCode(for: Data(ciphertext.utf8), using: SymmetricKey(data: hmacKey))
+        return EncryptedPayload(ciphertext: ciphertext,
+                                iv: iv.base64EncodedString(),
+                                hmac: Data(mac).map { String(format: "%02x", $0) }.joined())
+    }
+
+    private static func randomIV() -> Data {
+        var generator = SystemRandomNumberGenerator()
+        return Data((0..<kCCBlockSizeAES128).map { _ in UInt8.random(in: .min ... .max, using: &generator) })
+    }
+
+    private func aes256CBC(_ operation: CCOperation, _ input: Data, iv: Data) throws -> Data {
+        var output = Data(count: input.count + kCCBlockSizeAES128)
         let outputCapacity = output.count
         var written = 0
         let status = output.withUnsafeMutableBytes { outputBytes in
-            ciphertext.withUnsafeBytes { inputBytes in
+            input.withUnsafeBytes { inputBytes in
                 iv.withUnsafeBytes { ivBytes in
                     encryptionKey.withUnsafeBytes { keyBytes in
-                        CCCrypt(CCOperation(kCCDecrypt),
+                        CCCrypt(operation,
                                 CCAlgorithm(kCCAlgorithmAES),
                                 CCOptions(kCCOptionPKCS7Padding),
                                 keyBytes.baseAddress,
                                 encryptionKey.count,
                                 ivBytes.baseAddress,
                                 inputBytes.baseAddress,
-                                ciphertext.count,
+                                input.count,
                                 outputBytes.baseAddress,
                                 outputCapacity,
                                 &written)
@@ -99,7 +114,7 @@ public struct KeyBundle: Sendable, Equatable {
                 }
             }
         }
-        guard status == kCCSuccess else { throw SyncCryptoError.decryptionFailed(status) }
+        guard status == kCCSuccess else { throw SyncCryptoError.cryptorFailed(status) }
         return output.prefix(written)
     }
 }

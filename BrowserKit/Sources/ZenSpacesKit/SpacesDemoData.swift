@@ -46,7 +46,16 @@ public enum SpacesDemoData {
                 ]))
             }
         }
-        records.append(record("layout", kind: "layout", data: ["spaces": spaceIds, "essentials": [:]]))
+        let essentialIds = ["demo-essential-0", "demo-essential-1"]
+        for (position, tabId) in essentialIds.enumerated() {
+            let (url, title) = sites[position]
+            records.append(record(tabId, kind: "tab", data: [
+                "tabId": tabId, "url": url, "title": title, "essential": true, "pinned": true,
+            ]))
+        }
+        records.append(record("layout", kind: "layout", data: [
+            "spaces": spaceIds, "essentials": ["default": essentialIds],
+        ]))
         return records
     }
 

@@ -239,17 +239,24 @@ private struct ZenSpaceIcon: View {
     }
 }
 
-/// Zen syncs only `data:` favicons usefully; anything else gets a letter.
+/// Zen syncs favicons as `data:` URLs; anything unusable gets a letter.
 struct ZenSpacesFavicon: View {
     let tab: TabRecord
     let size: CGFloat
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
-        if let image = Self.decode(tab.icon) {
-            Image(uiImage: image)
+        let dark = colorScheme == .dark
+        if let favicon = ZenFaviconImages.favicon(for: tab.icon, dark: dark) {
+            let vanishes = favicon.tone == (dark ? .dark : .light)
+            Image(uiImage: favicon.image)
                 .resizable()
                 .scaledToFit()
+                .frame(width: vanishes ? size * 0.7 : size, height: vanishes ? size * 0.7 : size)
                 .frame(width: size, height: size)
+                .background(vanishes ? Color(white: dark ? 0.85 : 0.2) : .clear,
+                            in: RoundedRectangle(cornerRadius: size / 4))
                 .accessibilityHidden(true)
         } else {
             Text((URL(string: tab.url)?.host() ?? tab.displayTitle).prefix(1).uppercased())
@@ -257,14 +264,5 @@ struct ZenSpacesFavicon: View {
                 .frame(width: size, height: size)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: size / 4))
         }
-    }
-
-    private static func decode(_ icon: String) -> UIImage? {
-        guard icon.hasPrefix("data:"),
-              let comma = icon.firstIndex(of: ","),
-              icon[..<comma].hasSuffix(";base64"),
-              let data = Data(base64Encoded: String(icon[icon.index(after: comma)...]))
-        else { return nil }
-        return UIImage(data: data)
     }
 }

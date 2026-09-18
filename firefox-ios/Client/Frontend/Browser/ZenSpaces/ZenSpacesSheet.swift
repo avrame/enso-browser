@@ -55,35 +55,48 @@ struct ZenSpacesSheet: View {
     // MARK: Space pages
 
     private func pages(_ snapshot: SpacesSnapshot) -> some View {
-        TabView(selection: selection(snapshot)) {
+        let selection = selection(snapshot)
+        return TabView(selection: selection) {
             ForEach(snapshot.spaces, id: \.record.uuid) { space in
-                ZenSpacePage(space: space, onOpen: onOpen, onRefresh: { await store.refresh() })
+                ZenSpacePage(space: space,
+                             allSpaces: snapshot.spaces,
+                             selection: selection,
+                             onOpen: onOpen,
+                             onRefresh: { await store.refresh() })
                     .tag(space.record.uuid)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
     }
 
+    /// Keeps the current space's icon in view as pages change.
     private func spaceStrip(_ snapshot: SpacesSnapshot) -> some View {
         let current = selection(snapshot).wrappedValue
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(snapshot.spaces, id: \.record.uuid) { space in
-                    Button {
-                        withAnimation { selectedSpace = space.record.uuid }
-                    } label: {
-                        ZenSpaceIcon(space: space.record)
-                            .frame(width: 36, height: 36)
-                            .background(space.record.uuid == current ? AnyShapeStyle(.tint.opacity(0.2))
-                                                                      : AnyShapeStyle(.clear),
-                                        in: Circle())
+        return ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(snapshot.spaces, id: \.record.uuid) { space in
+                        Button {
+                            withAnimation { selectedSpace = space.record.uuid }
+                        } label: {
+                            ZenSpaceIcon(space: space.record)
+                                .frame(width: 36, height: 36)
+                                .background(space.record.uuid == current ? AnyShapeStyle(.tint.opacity(0.2))
+                                                                          : AnyShapeStyle(.clear),
+                                            in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .id(space.record.uuid)
+                        .accessibilityLabel(space.record.name)
+                        .accessibilityAddTraits(space.record.uuid == current ? .isSelected : [])
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(space.record.name)
-                    .accessibilityAddTraits(space.record.uuid == current ? .isSelected : [])
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
+            .onAppear { proxy.scrollTo(current, anchor: .center) }
+            .onChange(of: current) { _, uuid in
+                withAnimation { proxy.scrollTo(uuid, anchor: .center) }
+            }
         }
         .padding(.vertical, 8)
     }
@@ -148,6 +161,8 @@ struct ZenSpacesSheet: View {
 
 private struct ZenSpacePage: View {
     let space: SpaceNode
+    let allSpaces: [SpaceNode]
+    @Binding var selection: String
     let onOpen: (TabRecord) -> Void
     let onRefresh: () async -> Void
 
@@ -163,7 +178,7 @@ private struct ZenSpacePage: View {
             } header: {
                 HStack(spacing: 8) {
                     ZenSpaceIcon(space: space.record)
-                    Text(space.record.name).font(.headline)
+                    spaceMenu
                     if let container = space.container {
                         Text(container.name)
                             .font(.caption)
@@ -178,6 +193,27 @@ private struct ZenSpacePage: View {
         }
         .listStyle(.insetGrouped)
         .refreshable { await onRefresh() }
+    }
+
+    /// Every space by name, for jumping when the strip holds too many to scan.
+    private var spaceMenu: some View {
+        Menu {
+            Picker("Space", selection: $selection.animation()) {
+                ForEach(allSpaces, id: \.record.uuid) { space in
+                    Text(ZenSpaceIcon.menuTitle(for: space.record)).tag(space.record.uuid)
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(space.record.name).font(.headline).multilineTextAlignment(.leading)
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+        }
+        .accessibilityLabel("Space: \(space.record.name)")
+        .accessibilityHint("Shows all spaces")
     }
 }
 
@@ -227,9 +263,19 @@ private struct ZenSidebarItemView: View {
 private struct ZenSpaceIcon: View {
     let space: SpaceRecord
 
+    /// Zen space icons are emoji or `chrome://` image URLs, which cannot load here.
+    static func emoji(for space: SpaceRecord) -> String? {
+        guard let icon = space.icon, !icon.isEmpty, !icon.contains(":") else { return nil }
+        return icon
+    }
+
+    static func menuTitle(for space: SpaceRecord) -> String {
+        emoji(for: space).map { "\($0)  \(space.name)" } ?? space.name
+    }
+
     var body: some View {
-        if let icon = space.icon, !icon.isEmpty, !icon.contains(":") {
-            Text(icon)
+        if let emoji = Self.emoji(for: space) {
+            Text(emoji)
         } else {
             Text(space.name.prefix(1).uppercased())
                 .font(.caption.weight(.semibold))

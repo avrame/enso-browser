@@ -521,6 +521,7 @@ class AppSettingsTableViewController: SettingsTableViewController,
 
     private func getDebugSettings() -> [SettingSection] {
         var hiddenDebugOptions = [
+            ZenSpacesDebugSetting(settings: self),
             ExperimentsSettings(settings: self, settingsDelegate: self),
             ExportLogDataSetting(settings: self),
             ExportBrowserDataSetting(settings: self),

@@ -68,6 +68,9 @@ let package = Package(
         .library(
             name: "WebCompatReporterKit",
             targets: ["WebCompatReporterKit"]),
+        .library(
+            name: "ZenSpacesKit",
+            targets: ["ZenSpacesKit"]),
         .executable(
             name: "ExecutableContentBlockingGenerator",
             targets: ["ExecutableContentBlockingGenerator"]),
@@ -231,6 +234,14 @@ let package = Package(
             swiftSettings: [
             ]
         ),
+        .target(
+            name: "ZenSpacesKit",
+            swiftSettings: [
+                .unsafeFlags(["-enable-testing"]),
+            ]),
+        .testTarget(
+            name: "ZenSpacesKitTests",
+            dependencies: ["ZenSpacesKit"]),
         .target(
             name: "AppAttestKit",
             dependencies: [],

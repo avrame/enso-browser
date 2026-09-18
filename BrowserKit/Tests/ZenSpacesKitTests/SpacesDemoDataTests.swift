@@ -18,5 +18,7 @@ final class SpacesDemoDataTests: XCTestCase {
         XCTAssertEqual(folder.items.count, 1)
         XCTAssertEqual(snapshot.spaces.first?.items.count, 4)
         XCTAssertEqual(snapshot.essentials.first?.tabs.count, 2)
+        XCTAssertEqual(snapshot.spaces[0].record.parsedTheme?.colors.count, 3)
+        XCTAssertNil(snapshot.spaces[3].record.parsedTheme)
     }
 }

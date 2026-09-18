@@ -8,6 +8,13 @@ import Foundation
 /// spaces than a real account has. Never uploaded anywhere.
 public enum SpacesDemoData {
     private static let icons = ["🏠", "💼", "🎨", "📚", "🧪", "🎮", "✈️", "🍳", "🎵", "🏃", "💡", "🛠️"]
+    /// Some two- and three-color gradients; every fourth space has none.
+    private static let palettes: [[[Int]]] = [
+        [[65, 195, 241], [74, 65, 241], [64, 242, 145]],
+        [[227, 161, 130], [211, 227, 130], [227, 130, 181]],
+        [[77, 116, 178]],
+        [],
+    ]
     private static let sites = [
         ("https://www.wikipedia.org/", "Wikipedia"),
         ("https://news.ycombinator.com/", "Hacker News"),
@@ -29,8 +36,12 @@ public enum SpacesDemoData {
 
             let icon: Any = index.isMultiple(of: 3) ? NSNull() : icons[index % icons.count]
             let name = index == 1 ? "A space with a very long name that will not fit" : "Space \(index + 1)"
+            let colors = palettes[index % palettes.count].enumerated().map { position, rgb in
+                ["c": rgb, "isPrimary": position == 0, "isCustom": false] as [String: Any]
+            }
             records.append(record(spaceId, kind: "space", data: [
                 "uuid": spaceId, "name": name, "icon": icon,
+                "theme": ["type": "gradient", "gradientColors": colors, "opacity": 0.5, "texture": 0],
                 "children": [folderId] + tabIds.dropFirst(),
             ]))
             records.append(record(folderId, kind: "folder", data: [

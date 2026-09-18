@@ -149,8 +149,7 @@ struct ZenSpacesSheet: View {
                         } label: {
                             ZenSpaceIcon(space: space.record)
                                 .frame(width: 36, height: 36)
-                                .background(space.record.uuid == current ? AnyShapeStyle(.tint.opacity(0.2))
-                                                                          : AnyShapeStyle(.clear),
+                                .background(stripHighlight(space.record, selected: space.record.uuid == current),
                                             in: Circle())
                         }
                         .buttonStyle(.plain)
@@ -167,6 +166,16 @@ struct ZenSpacesSheet: View {
             }
         }
         .padding(.vertical, 8)
+    }
+
+    /// The space's own primary color marks the selection, as Zen tints its
+    /// sidebar; spaces without a theme use the app tint.
+    private func stripHighlight(_ space: SpaceRecord, selected: Bool) -> AnyShapeStyle {
+        guard selected else { return AnyShapeStyle(.clear) }
+        if let primary = space.parsedTheme?.primary {
+            return AnyShapeStyle(Color(primary).opacity(0.35))
+        }
+        return AnyShapeStyle(.tint.opacity(0.2))
     }
 
     /// Falls back to the first space when the remembered one is gone.
@@ -276,6 +285,8 @@ private struct ZenSpacePage: View {
             }
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(ZenSpaceBackground(theme: space.record.parsedTheme))
         .refreshable { await onRefresh() }
     }
 
@@ -375,6 +386,11 @@ private struct ZenSpaceIcon: View {
         emoji(for: space).map { "\($0)  \(space.name)" } ?? space.name
     }
 
+    private var letterBackground: AnyShapeStyle {
+        guard let primary = space.parsedTheme?.primary else { return AnyShapeStyle(.quaternary) }
+        return AnyShapeStyle(Color(primary).opacity(0.45))
+    }
+
     var body: some View {
         if let emoji = Self.emoji(for: space) {
             Text(emoji)
@@ -382,7 +398,7 @@ private struct ZenSpaceIcon: View {
             Text(space.name.prefix(1).uppercased())
                 .font(.caption.weight(.semibold))
                 .frame(width: 22, height: 22)
-                .background(.quaternary, in: Circle())
+                .background(letterBackground, in: Circle())
         }
     }
 }

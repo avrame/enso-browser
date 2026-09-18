@@ -95,6 +95,10 @@ protocol BrowserNavigationHandler: AnyObject, QRCodeNavigationHandler {
     @MainActor
     func showMainMenu()
 
+    /// Shows the Zen spaces sheet
+    @MainActor
+    func showZenSpaces()
+
     /// Shows the toolbar's search engine selection bottom sheet (iPhone) or popup (iPad)
     @MainActor
     func showSearchEngineSelection(forSourceView sourceView: UIView)

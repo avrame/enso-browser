@@ -21,6 +21,7 @@ struct ToolbarActionConfiguration: Equatable {
         case search
         case tabs
         case menu
+        case spaces
         case share
         case reload
         case stopLoading

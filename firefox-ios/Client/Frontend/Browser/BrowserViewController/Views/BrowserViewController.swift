@@ -2864,6 +2864,9 @@ class BrowserViewController: UIViewController,
             navigationHandler?.showEnhancedTrackingProtection(sourceView: state.buttonTapped ?? addressToolbarContainer)
         case .menu:
             didTapOnMenu(button: state.buttonTapped)
+        case .spaces:
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            navigationHandler?.showZenSpaces()
         case .reloadLongPressAction:
             guard let button = state.buttonTapped else { return }
             presentRefreshLongPressAction(from: button)

@@ -17,6 +17,7 @@ struct AccessibilityIdentifiers {
     /// Using only those a11y identifiers for both ensures we have standard way to refer to buttons from iPad to iPhone
     struct Toolbar {
         static let settingsMenuButton = "TabToolbar.menuButton"
+        static let spacesButton = "TabToolbar.spacesButton"
         static let homeButton = "TabToolbar.homeButton"
         static let readerModeButton = "TabLocationView.readerModeButton"
         static let readerModeWithSummarizerButton = "TabLocationView.readerModeWithSummarizerButton"

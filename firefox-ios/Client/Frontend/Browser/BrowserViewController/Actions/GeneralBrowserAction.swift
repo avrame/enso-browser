@@ -71,6 +71,7 @@ enum GeneralBrowserActionType: ActionType {
     case showTabsLongPressActions
     case showReloadLongPressAction
     case showMenu
+    case showSpaces
     case showLocationViewLongPressActionSheet
     case showSummarizer
     case stopLoadingWebsite

@@ -15,6 +15,7 @@ import Redux
 import PDFKit
 import SummarizeKit
 import QuickAnswersKit
+import ZenSpacesKit
 
 import enum MozillaAppServices.VisitType
 import struct MozillaAppServices.CreditCard
@@ -572,6 +573,41 @@ final class BrowserCoordinator: BaseCoordinator,
         mainMenuCoordinator.navigationHandler = self
         add(child: mainMenuCoordinator)
         mainMenuCoordinator.startWithNavController()
+    }
+
+    func showZenSpaces() {
+        let sheet = ZenSpacesSheet(store: ZenSpacesService.store) { [weak self] pinned in
+            self?.router.dismiss(animated: true) {
+                self?.openZenSpaceTab(pinned)
+            }
+        }
+        let controller = UIHostingController(rootView: sheet)
+        controller.sheetPresentationController?.detents = [.medium(), .large()]
+        controller.sheetPresentationController?.prefersGrabberVisible = true
+        present(controller)
+    }
+
+    /// Like Zen, a pinned tab keeps its own browser tab: reselect the one it
+    /// opened before (even after redirects), else one already on that page.
+    private func openZenSpaceTab(_ pinned: TabRecord) {
+        guard let url = URL(string: pinned.url) else { return }
+        let tabs = tabManager.normalTabs
+        let restoring = tabManager.isRestoringTabs
+        let linkedUUID = ZenSpacesService.pinnedTabLinks.browserTab(for: pinned.tabId) { uuid in
+            restoring || tabs.contains { $0.tabUUID == uuid }
+        }
+        let linked = linkedUUID.flatMap { uuid in tabs.first { $0.tabUUID == uuid } }
+        let matching = tabs.first { tab in
+            tab.url.map { PinnedURLMatching.isSamePage($0, url) } ?? false
+        }
+        let tab: Tab
+        if let existing = linked ?? matching {
+            tab = existing
+            tabManager.selectTab(existing)
+        } else {
+            tab = browserViewController.openURLInNewTab(url, isPrivate: false)
+        }
+        ZenSpacesService.pinnedTabLinks.link(pinned.tabId, to: tab.tabUUID)
     }
 
     func openURLInNewTab(_ url: URL?) {

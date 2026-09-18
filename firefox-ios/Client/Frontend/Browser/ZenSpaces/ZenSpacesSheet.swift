@@ -5,6 +5,19 @@
 import SwiftUI
 import ZenSpacesKit
 
+/// A space or folder the user asked to rename, with the name to start from.
+private struct RenameRequest {
+    let target: RenameTarget
+    let currentName: String
+
+    var title: String {
+        switch target {
+        case .space: return "Rename Space"
+        case .folder: return "Rename Folder"
+        }
+    }
+}
+
 /// Zen's spaces on a phone: Essentials on top, one page per space that
 /// swipes sideways, and a strip of space icons to jump between them.
 struct ZenSpacesSheet: View {
@@ -12,7 +25,7 @@ struct ZenSpacesSheet: View {
     let onOpen: (TabRecord) -> Void
 
     @AppStorage("zenSpaces.selectedSpace") private var selectedSpace = ""
-    @State private var renaming: SpaceRecord?
+    @State private var renaming: RenameRequest?
     @State private var draftName = ""
     @State private var isSaving = false
     @State private var writeError: String?
@@ -33,10 +46,10 @@ struct ZenSpacesSheet: View {
         // height, which snaps it back to the first space.
         .ignoresSafeArea(.keyboard)
         .task { await store.refresh() }
-        .alert("Rename Space", isPresented: isPresent($renaming), presenting: renaming) { space in
+        .alert(renaming?.title ?? "", isPresented: isPresent($renaming), presenting: renaming) { request in
             TextField("Name", text: $draftName)
             Button("Cancel", role: .cancel) {}
-            Button("Rename") { save(space) }
+            Button("Rename") { save(request.target) }
                 .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         } message: { _ in
             Text("The new name also appears in Zen on your other devices.")
@@ -50,19 +63,19 @@ struct ZenSpacesSheet: View {
 
     // MARK: Renaming
 
-    private func startRenaming(_ space: SpaceRecord) {
-        draftName = space.name
-        renaming = space
+    private func startRenaming(_ request: RenameRequest) {
+        draftName = request.currentName
+        renaming = request
     }
 
     /// Nothing changes locally until the server has accepted the new name.
-    private func save(_ space: SpaceRecord) {
+    private func save(_ target: RenameTarget) {
         let name = draftName
         isSaving = true
         Task {
             defer { isSaving = false }
             do {
-                try await store.renameSpace(space.uuid, to: name)
+                try await store.rename(target, to: name)
             } catch {
                 writeError = Self.message(for: error)
             }
@@ -233,7 +246,7 @@ private struct ZenSpacePage: View {
     let space: SpaceNode
     let allSpaces: [SpaceNode]
     @Binding var selection: String
-    let onRename: (SpaceRecord) -> Void
+    let onRename: (RenameRequest) -> Void
     let onOpen: (TabRecord) -> Void
     let onRefresh: () async -> Void
 
@@ -244,7 +257,7 @@ private struct ZenSpacePage: View {
                     Text("No pinned tabs").foregroundStyle(.secondary)
                 }
                 ForEach(Array(space.items.enumerated()), id: \.offset) { _, item in
-                    ZenSidebarItemView(item: item, onOpen: onOpen)
+                    ZenSidebarItemView(item: item, onOpen: onOpen, onRename: onRename)
                 }
             } header: {
                 HStack(spacing: 8) {
@@ -276,7 +289,7 @@ private struct ZenSpacePage: View {
             }
             Divider()
             Button {
-                onRename(space.record)
+                onRename(RenameRequest(target: .space(space.record.uuid), currentName: space.record.name))
             } label: {
                 Label("Rename Space…", systemImage: "pencil")
             }
@@ -297,6 +310,7 @@ private struct ZenSpacePage: View {
 private struct ZenSidebarItemView: View {
     let item: SidebarItem
     let onOpen: (TabRecord) -> Void
+    let onRename: (RenameRequest) -> Void
 
     var body: some View {
         switch item {
@@ -310,10 +324,21 @@ private struct ZenSidebarItemView: View {
         case .folder(let folder):
             DisclosureGroup {
                 ForEach(Array(folder.items.enumerated()), id: \.offset) { _, child in
-                    ZenSidebarItemView(item: child, onOpen: onOpen)
+                    ZenSidebarItemView(item: child, onOpen: onOpen, onRename: onRename)
                 }
             } label: {
                 Label(folder.record.name, systemImage: folder.record.live == nil ? "folder" : "dot.radiowaves.up.forward")
+                    .contextMenu {
+                        Button {
+                            onRename(RenameRequest(target: .folder(folder.record.folderId),
+                                                   currentName: folder.record.name))
+                        } label: {
+                            Label("Rename Folder…", systemImage: "pencil")
+                        }
+                    }
+                    .accessibilityAction(named: "Rename Folder") {
+                        onRename(RenameRequest(target: .folder(folder.record.folderId), currentName: folder.record.name))
+                    }
             }
         case .missing:
             EmptyView()

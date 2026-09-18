@@ -68,7 +68,7 @@ public final class SpacesStore: ObservableObject {
     @Published public private(set) var fetchedAt: Date?
     @Published public private(set) var status: Status = .idle
 
-    public typealias Rename = @MainActor (_ spaceUUID: String, _ name: String) async throws -> SpacesRecord
+    public typealias Rename = @MainActor (_ target: RenameTarget, _ name: String) async throws -> SpacesRecord
 
     private let cache: SpacesCache
     private let fetch: @MainActor () async throws -> SpacesFetchResult
@@ -106,8 +106,8 @@ public final class SpacesStore: ObservableObject {
 
     /// Renames on the server first; the local copy only changes once the
     /// server accepted the write.
-    public func renameSpace(_ uuid: String, to name: String) async throws {
-        let updated = try await rename(uuid, name)
+    public func rename(_ target: RenameTarget, to name: String) async throws {
+        let updated = try await rename(target, name)
         replace(updated)
     }
 

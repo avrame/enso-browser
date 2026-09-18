@@ -4,6 +4,26 @@
 
 import Foundation
 
+/// Something the user can rename, identified by its record id.
+public enum RenameTarget: Sendable, Equatable {
+    case space(String)
+    case folder(String)
+
+    public var id: String {
+        switch self {
+        case .space(let id), .folder(let id): return id
+        }
+    }
+
+    /// The record `kind` Zen uses for it.
+    public var kind: String {
+        switch self {
+        case .space: return "space"
+        case .folder: return "folder"
+        }
+    }
+}
+
 public enum ZenSpacesWriteError: Error, Equatable, CustomStringConvertible {
     /// Writes are only safe against the exact format this client knows.
     case unsupportedEngineVersion(Int?)
@@ -19,10 +39,10 @@ public enum ZenSpacesWriteError: Error, Equatable, CustomStringConvertible {
             let found = version.map(String.init) ?? "none"
             return "Zen's spaces format on the server is version \(found); this app only writes version "
                 + "\(ZenSpacesReader.supportedEngineVersion)."
-        case .recordNotFound: return "That space is no longer on the server. Pull to refresh."
+        case .recordNotFound: return "That item is no longer on the server. Pull to refresh."
         case .unexpectedRecord(_, let reason): return "The server copy looks different than expected: \(reason)"
-        case .invalidName: return "A space needs a name."
-        case .conflict: return "The space kept changing on another device. Try again."
+        case .invalidName: return "The name can't be empty."
+        case .conflict: return "It kept changing on another device. Try again."
         }
     }
 }
@@ -39,12 +59,18 @@ public struct ZenSpacesWriter: Sendable {
         self.client = SyncStorageClient(auth: auth, transport: transport)
     }
 
-    public func renameSpace(uuid: String, to name: String) async throws -> SpacesRecord {
-        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { throw ZenSpacesWriteError.invalidName }
-        return try await update(id: uuid, kind: "space") { data in
+    /// Spaces and folders both keep their name in `data.name`.
+    public func rename(_ target: RenameTarget, to name: String) async throws -> SpacesRecord {
+        let name = try Self.validName(name)
+        return try await update(id: target.id, kind: target.kind) { data in
             data["name"] = .string(name)
         }
+    }
+
+    public static func validName(_ name: String) throws -> String {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { throw ZenSpacesWriteError.invalidName }
+        return name
     }
 
     private func update(id: String,

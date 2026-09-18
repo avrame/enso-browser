@@ -35,8 +35,8 @@ enum ZenSpacesService {
         try await ZenSpacesReader(auth: auth()).fetch()
     }
 
-    private static func rename(_ uuid: String, _ name: String) async throws -> SpacesRecord {
-        try await ZenSpacesWriter(auth: auth()).renameSpace(uuid: uuid, to: name)
+    private static func rename(_ target: RenameTarget, _ name: String) async throws -> SpacesRecord {
+        try await ZenSpacesWriter(auth: auth()).rename(target, to: name)
     }
 
     private static func auth() async throws -> SyncAuth {
@@ -60,16 +60,17 @@ private final class DemoSpaces {
                           fetchedAt: Date())
     }
 
-    func rename(_ uuid: String, _ name: String) async throws -> SpacesRecord {
+    func rename(_ target: RenameTarget, _ name: String) async throws -> SpacesRecord {
         try await Task.sleep(for: .seconds(1))
-        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { throw ZenSpacesWriteError.invalidName }
-        guard let index = records.firstIndex(where: { $0.id == uuid }),
+        let name = try ZenSpacesWriter.validName(name)
+        guard let index = records.firstIndex(where: { $0.id == target.id }),
               let raw = records[index].raw,
               let cleartext = try? JSONEncoder().encode(raw)
-        else { throw ZenSpacesWriteError.recordNotFound(uuid) }
-        let changed = try ZenSpacesWriter.changed(cleartext, id: uuid, kind: "space") { $0["name"] = .string(name) }
-        let record = SpacesRecord(id: uuid, modified: Date(), cleartext: changed)
+        else { throw ZenSpacesWriteError.recordNotFound(target.id) }
+        let changed = try ZenSpacesWriter.changed(cleartext, id: target.id, kind: target.kind) {
+            $0["name"] = .string(name)
+        }
+        let record = SpacesRecord(id: target.id, modified: Date(), cleartext: changed)
         records[index] = record
         return record
     }

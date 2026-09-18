@@ -13,6 +13,11 @@ final class ZenSpacesWriterTests: XCTestCase {
         + #""theme":{"type":"gradient","gradientColors":[{"c":[1,2,3],"isCustom":false}],"opacity":0.5,"texture":0},"#
         + #""containerGuid":"builtin-2","children":["t1","f1"],"futureField":{"x":true}},"extra":"kept"}"#
 
+    private static let liveFolder = #"{"id":"f1","kind":"folder","data":{"folderId":"f1","name":"Feeds","#
+        + #""icon":null,"workspaceUuid":"{a}","parentFolderId":null,"#
+        + #""live":{"type":"rss","state":{"url":"https://example.com/feed.xml","maxItems":10}},"#
+        + #""children":["t1","sp1"]}}"#
+
     // MARK: Encryption
 
     func testEncryptMatchesOpenSSLVector() throws {
@@ -73,7 +78,7 @@ final class ZenSpacesWriterTests: XCTestCase {
         let server = try makeServer(engineVersion: 3)
         let writer = ZenSpacesWriter(auth: try auth(), transport: server)
 
-        let record = try await writer.renameSpace(uuid: "{a}", to: "  New name  ")
+        let record = try await writer.rename(.space("{a}"), to: "  New name  ")
 
         let put = try XCTUnwrap(server.puts.first)
         XCTAssertEqual(server.puts.count, 1)
@@ -99,7 +104,7 @@ final class ZenSpacesWriterTests: XCTestCase {
         server.concurrentEdits = [("{a}", edited)]
         let writer = ZenSpacesWriter(auth: try auth(), transport: server)
 
-        _ = try await writer.renameSpace(uuid: "{a}", to: "New")
+        _ = try await writer.rename(.space("{a}"), to: "New")
 
         XCTAssertEqual(server.puts.map(\.ifUnmodifiedSince), ["1700000000.00", "1700000005.00"])
         let uploaded = try decrypt(try XCTUnwrap(server.puts.last).payload)
@@ -108,13 +113,43 @@ final class ZenSpacesWriterTests: XCTestCase {
         XCTAssertEqual(uploaded["data"]?["children"], children, "the other device's reordering survives")
     }
 
+    func testRenamesAFolderKeepingItsLiveFeedAndChildren() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+
+        let record = try await writer.rename(.folder("f1"), to: "News")
+
+        let put = try XCTUnwrap(server.puts.first)
+        XCTAssertEqual(put.id, "f1")
+        let before = try JSONDecoder().decode(JSONValue.self, from: Data(Self.liveFolder.utf8))
+        let uploaded = try decrypt(put.payload)
+        XCTAssertEqual(uploaded["data"]?["name"], .string("News"))
+        XCTAssertEqual(uploaded["data"]?["live"], before["data"]?["live"])
+        XCTAssertEqual(uploaded["data"]?["children"], before["data"]?["children"])
+        XCTAssertEqual(uploaded["data"]?["workspaceUuid"], .string("{a}"))
+        guard case .folder(let folder) = record.body else { return XCTFail("\(record.body)") }
+        XCTAssertEqual(folder.name, "News")
+    }
+
+    func testRefusesToRenameARecordOfAnotherKind() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+        do {
+            _ = try await writer.rename(.folder("{a}"), to: "New")
+            XCTFail("a space must not be renamed as a folder")
+        } catch {
+            XCTAssertEqual(error as? ZenSpacesWriteError, .unexpectedRecord(id: "{a}", reason: "not a folder"))
+        }
+        XCTAssertTrue(server.puts.isEmpty)
+    }
+
     func testGivesUpAfterRepeatedConflicts() async throws {
         let server = try makeServer(engineVersion: 3)
         server.concurrentEdits = Array(repeating: ("{a}", Self.space), count: 3)
         let writer = ZenSpacesWriter(auth: try auth(), transport: server)
 
         do {
-            _ = try await writer.renameSpace(uuid: "{a}", to: "New")
+            _ = try await writer.rename(.space("{a}"), to: "New")
             XCTFail("expected a conflict")
         } catch {
             XCTAssertEqual(error as? ZenSpacesWriteError, .conflict("{a}"))
@@ -127,7 +162,7 @@ final class ZenSpacesWriterTests: XCTestCase {
             let server = try makeServer(engineVersion: version)
             let writer = ZenSpacesWriter(auth: try auth(), transport: server)
             do {
-                _ = try await writer.renameSpace(uuid: "{a}", to: "New")
+                _ = try await writer.rename(.space("{a}"), to: "New")
                 XCTFail("expected refusal for \(String(describing: version))")
             } catch {
                 XCTAssertEqual(error as? ZenSpacesWriteError, .unsupportedEngineVersion(version))
@@ -140,13 +175,13 @@ final class ZenSpacesWriterTests: XCTestCase {
         let server = try makeServer(engineVersion: 3)
         let writer = ZenSpacesWriter(auth: try auth(), transport: server)
         do {
-            _ = try await writer.renameSpace(uuid: "{a}", to: "   ")
+            _ = try await writer.rename(.space("{a}"), to: "   ")
             XCTFail("expected refusal")
         } catch {
             XCTAssertEqual(error as? ZenSpacesWriteError, .invalidName)
         }
         do {
-            _ = try await writer.renameSpace(uuid: "{gone}", to: "New")
+            _ = try await writer.rename(.space("{gone}"), to: "New")
             XCTFail("expected not found")
         } catch {
             XCTAssertEqual(error as? ZenSpacesWriteError, .recordNotFound("{gone}"))
@@ -163,6 +198,7 @@ final class ZenSpacesWriterTests: XCTestCase {
                                                         hmacKey: syncKeyBytes.suffix(32)),
                            collectionBundle: bundle)
         server.items["{a}"] = try server.bso("{a}", Self.space, bundle)
+        server.items["f1"] = try server.bso("f1", Self.liveFolder, bundle)
         return server
     }
 

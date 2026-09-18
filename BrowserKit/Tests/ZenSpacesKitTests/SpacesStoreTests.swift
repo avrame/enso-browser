@@ -73,13 +73,13 @@ final class SpacesStoreTests: XCTestCase {
         let renamed = records(spaceName: "New", modified: Date(timeIntervalSince1970: 1_700_000_010))[0]
         let store = SpacesStore(cache: cache,
                                 fetch: { throw ZenSpacesError.engineNotOnServer },
-                                rename: { uuid, name in
-                                    XCTAssertEqual(uuid, "{a}")
+                                rename: { target, name in
+                                    XCTAssertEqual(target, .space("{a}"))
                                     XCTAssertEqual(name, "New")
                                     return renamed
                                 })
 
-        try await store.renameSpace("{a}", to: "New")
+        try await store.rename(.space("{a}"), to: "New")
         XCTAssertEqual(store.snapshot?.spaces.map(\.record.name), ["New"])
         XCTAssertEqual(cache.load().map { SpacesSnapshot(records: $0.records).spaces.map(\.record.name) }, ["New"])
     }
@@ -92,7 +92,7 @@ final class SpacesStoreTests: XCTestCase {
                                 rename: { _, _ in throw ZenSpacesWriteError.conflict("{a}") })
 
         do {
-            try await store.renameSpace("{a}", to: "New")
+            try await store.rename(.space("{a}"), to: "New")
             XCTFail("expected the error to surface")
         } catch {
             XCTAssertEqual(error as? ZenSpacesWriteError, .conflict("{a}"))

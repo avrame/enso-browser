@@ -70,6 +70,9 @@ public struct SplitRecord: Sendable, Equatable {
 }
 
 public struct LayoutRecord: Sendable, Equatable {
+    /// Zen's fixed id for the one layout record.
+    public static let id = "layout"
+
     public let spaces: [String]
     /// Keyed by container guid, or `"default"` for no container.
     public let essentials: [String: [String]]

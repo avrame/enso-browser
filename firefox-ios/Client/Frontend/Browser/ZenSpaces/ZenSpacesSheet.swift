@@ -93,6 +93,8 @@ struct ZenSpacesSheet: View {
     @State private var writeError: String?
     @State private var unpinning: TabRecord?
     @State private var choosingIcon: SpaceRecord?
+    @State private var namingNewSpace = false
+    @State private var newSpaceName = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -117,6 +119,14 @@ struct ZenSpacesSheet: View {
                 .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         } message: { _ in
             Text("The new name also appears in Zen on your other devices.")
+        }
+        .alert("New Space", isPresented: $namingNewSpace) {
+            TextField("Name", text: $newSpaceName)
+            Button("Cancel", role: .cancel) {}
+            Button("Create") { createSpace(newSpaceName) }
+                .disabled(newSpaceName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        } message: {
+            Text("It also appears in Zen on your other devices.")
         }
         .sheet(item: $choosingIcon) { space in
             ZenSpaceIconPicker(spaceName: space.name, current: space.spaceIcon) { icon in
@@ -183,6 +193,19 @@ struct ZenSpacesSheet: View {
         Task {
             do {
                 try await store.move(itemID, in: parent, before: beforeID)
+            } catch {
+                writeError = Self.message(for: error)
+            }
+        }
+    }
+
+    private func createSpace(_ name: String) {
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                let uuid = try await store.createSpace(named: name)
+                withAnimation { selectedSpace = uuid }
             } catch {
                 writeError = Self.message(for: error)
             }
@@ -279,6 +302,10 @@ struct ZenSpacesSheet: View {
                              onMove: move,
                              onMoveToFolder: moveToFolder,
                              onChooseIcon: { choosingIcon = $0 },
+                             onNewSpace: {
+                                 newSpaceName = ""
+                                 namingNewSpace = true
+                             },
                              onOpen: onOpen,
                              onRefresh: { await store.refresh() })
                     .tag(space.record.uuid)
@@ -413,6 +440,7 @@ private struct ZenSpacePage: View {
     let onMove: ZenMove
     let onMoveToFolder: (TabRecord, String?) -> Void
     let onChooseIcon: (SpaceRecord) -> Void
+    let onNewSpace: () -> Void
     let onOpen: (TabRecord) -> Void
     let onRefresh: () async -> Void
 
@@ -561,6 +589,12 @@ private struct ZenSpacePage: View {
                 Label("Reorder…", systemImage: "arrow.up.arrow.down")
             }
             .disabled(space.items.count < 2)
+            Divider()
+            Button {
+                onNewSpace()
+            } label: {
+                Label("New Space…", systemImage: "plus")
+            }
         } label: {
             HStack(spacing: 4) {
                 Text(space.record.name)

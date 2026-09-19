@@ -80,6 +80,20 @@ public struct MovedTab: Sendable {
     public var records: [SpacesRecord] { [tab] + [destination, source].compactMap { $0 } }
 }
 
+/// The records a new space wrote: the space, and the layout listing it
+/// (nil when the account has no layout record yet).
+public struct CreatedSpace: Sendable {
+    public let space: SpacesRecord
+    public let layout: SpacesRecord?
+
+    public init(space: SpacesRecord, layout: SpacesRecord?) {
+        self.space = space
+        self.layout = layout
+    }
+
+    public var records: [SpacesRecord] { [space] + [layout].compactMap { $0 } }
+}
+
 public enum ZenSpacesWriteError: Error, Equatable, CustomStringConvertible {
     /// Writes are only safe against the exact format this client knows.
     case unsupportedEngineVersion(Int?)
@@ -121,12 +135,82 @@ public struct ZenSpacesWriter: Sendable {
     private let client: SyncStorageClient
     private let maxAttempts = 3
     private let makeTabID: @Sendable () -> String
+    private let makeSpaceID: @Sendable () -> String
 
     public init(auth: SyncAuth,
                 transport: HTTPTransport = URLSessionTransport(),
-                makeTabID: @escaping @Sendable () -> String = ZenSpacesWriter.newTabSyncID) {
+                makeTabID: @escaping @Sendable () -> String = ZenSpacesWriter.newTabSyncID,
+                makeSpaceID: @escaping @Sendable () -> String = ZenSpacesWriter.newSpaceUUID) {
         self.client = SyncStorageClient(auth: auth, transport: transport)
         self.makeTabID = makeTabID
+        self.makeSpaceID = makeSpaceID
+    }
+
+    /// Zen's gZenUIManager.generateUuidv4: `{lowercase-uuid}`.
+    public static func newSpaceUUID() -> String {
+        "{\(UUID().uuidString.lowercased())}"
+    }
+
+    /// Adds a space at the end of the account's spaces, with Zen's default
+    /// theme and no container. The space goes first: if listing it in the
+    /// layout fails, Zen still adds a space the layout does not name, last.
+    public func createSpace(named name: String, icon: SpaceIcon = .none) async throws -> CreatedSpace {
+        let name = try Self.validName(name)
+        let stored = try Self.validIcon(icon)
+        try await checkEngineVersion()
+
+        let uuid = makeSpaceID()
+        let cleartext = try Self.newSpace(uuid: uuid, name: name, icon: stored)
+        let modified: Double
+        do {
+            modified = try await client.put(id: uuid,
+                                            in: ZenSpacesReader.collection,
+                                            cleartext: cleartext,
+                                            ifUnmodifiedSince: 0)
+        } catch SyncStorageError.modifiedSince {
+            throw ZenSpacesWriteError.idCollision(uuid)
+        }
+        let space = SpacesRecord(id: uuid, modified: Date(timeIntervalSince1970: modified), cleartext: cleartext)
+
+        let layout: SpacesRecord?
+        do {
+            layout = try await updateRecord(id: LayoutRecord.id, kind: "layout") { data in
+                let spaces = Self.list(data["spaces"])
+                if !spaces.contains(.string(uuid)) {
+                    data["spaces"] = .array(spaces + [.string(uuid)])
+                }
+            }
+        } catch ZenSpacesWriteError.recordNotFound {
+            layout = nil
+        }
+        return CreatedSpace(space: space, layout: layout)
+    }
+
+    /// A space as Zen's model projects one (ZenSpacesSyncModel #projectSpaces),
+    /// with nsZenThemePicker.getTheme([]) as its theme.
+    public static func newSpace(uuid: String, name: String, icon: String?) throws -> Data {
+        let theme: JSONValue = .object([
+            "type": .string("gradient"),
+            "gradientColors": .array([]),
+            "opacity": .number(0.5),
+            "texture": .number(0),
+        ])
+        let data: [String: JSONValue] = [
+            "uuid": .string(uuid),
+            "name": .string(name),
+            "icon": icon.map(JSONValue.string) ?? .null,
+            "theme": theme,
+            "containerGuid": .null,
+            "children": .array([]),
+        ]
+        return try JSONEncoder().encode(JSONValue.object(["id": .string(uuid),
+                                                          "kind": .string("space"),
+                                                          "data": .object(data)]))
+    }
+
+    private static func list(_ value: JSONValue?) -> [JSONValue] {
+        guard case .array(let items)? = value else { return [] }
+        return items
     }
 
     /// Zen's own form (ZenWindowSync.#newTabSyncId): `<ms since 1970>-<lowercase uuid>`.

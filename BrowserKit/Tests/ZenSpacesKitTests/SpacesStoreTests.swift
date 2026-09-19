@@ -45,7 +45,8 @@ final class SpacesStoreTests: XCTestCase {
                                 unpin: Self.noUnpin,
                                 move: Self.noMove,
                                 moveTab: Self.noMoveTab,
-                                setIcon: Self.noSetIcon)
+                                setIcon: Self.noSetIcon,
+                                createSpace: Self.noCreateSpace)
         XCTAssertEqual(store.snapshot?.spaces.map(\.record.name), ["Cached"])
 
         await store.refresh()
@@ -64,7 +65,8 @@ final class SpacesStoreTests: XCTestCase {
                                 unpin: Self.noUnpin,
                                 move: Self.noMove,
                                 moveTab: Self.noMoveTab,
-                                setIcon: Self.noSetIcon)
+                                setIcon: Self.noSetIcon,
+                                createSpace: Self.noCreateSpace)
 
         await store.refresh()
         XCTAssertEqual(store.snapshot?.spaces.map(\.record.name), ["Cached"])
@@ -81,7 +83,8 @@ final class SpacesStoreTests: XCTestCase {
                                 unpin: Self.noUnpin,
                                 move: Self.noMove,
                                 moveTab: Self.noMoveTab,
-                                setIcon: Self.noSetIcon)
+                                setIcon: Self.noSetIcon,
+                                createSpace: Self.noCreateSpace)
 
         store.reset()
         XCTAssertNil(store.snapshot)
@@ -103,7 +106,8 @@ final class SpacesStoreTests: XCTestCase {
                                 unpin: Self.noUnpin,
                                 move: Self.noMove,
                                 moveTab: Self.noMoveTab,
-                                setIcon: Self.noSetIcon)
+                                setIcon: Self.noSetIcon,
+                                createSpace: Self.noCreateSpace)
 
         try await store.rename(.space("{a}"), to: "New")
         XCTAssertEqual(store.snapshot?.spaces.map(\.record.name), ["New"])
@@ -120,7 +124,8 @@ final class SpacesStoreTests: XCTestCase {
                                 unpin: Self.noUnpin,
                                 move: Self.noMove,
                                 moveTab: Self.noMoveTab,
-                                setIcon: Self.noSetIcon)
+                                setIcon: Self.noSetIcon,
+                                createSpace: Self.noCreateSpace)
 
         do {
             try await store.rename(.space("{a}"), to: "New")
@@ -175,7 +180,8 @@ final class SpacesStoreTests: XCTestCase {
                                 unpin: Self.noUnpin,
                                 move: Self.noMove,
                                 moveTab: Self.noMoveTab,
-                                setIcon: Self.noSetIcon)
+                                setIcon: Self.noSetIcon,
+                                createSpace: Self.noCreateSpace)
 
         let page = PinnablePage(url: try XCTUnwrap(URL(string: "https://a/")), title: "A")
         let pinned = try await store.pin(page, toSpace: "{a}")
@@ -209,7 +215,8 @@ final class SpacesStoreTests: XCTestCase {
                                 unpin: { _ in UnpinnedTab(parent: parent, tombstone: tombstone) },
                                 move: Self.noMove,
                                 moveTab: Self.noMoveTab,
-                                setIcon: Self.noSetIcon)
+                                setIcon: Self.noSetIcon,
+                                createSpace: Self.noCreateSpace)
         XCTAssertEqual(store.snapshot?.spaces.first?.items.count, 1)
 
         try await store.unpin(tabID: "t9")
@@ -257,7 +264,8 @@ final class SpacesStoreTests: XCTestCase {
                                 return SpacesRecord(id: "{a}", modified: Date(), cleartext: Data(server.utf8))
                             },
                             moveTab: Self.noMoveTab,
-                            setIcon: Self.noSetIcon)
+                            setIcon: Self.noSetIcon,
+                            createSpace: Self.noCreateSpace)
         let subject = try XCTUnwrap(store)
 
         try await subject.move("t3", in: .space("{a}"), before: "t1")
@@ -273,7 +281,8 @@ final class SpacesStoreTests: XCTestCase {
                                 unpin: Self.noUnpin,
                                 move: { _, _, _ in throw ZenSpacesWriteError.conflict("{a}") },
                                 moveTab: Self.noMoveTab,
-                                setIcon: Self.noSetIcon)
+                                setIcon: Self.noSetIcon,
+                                createSpace: Self.noCreateSpace)
         do {
             try await store.move("t3", in: .space("{a}"), before: "t1")
             XCTFail("expected the error to surface")
@@ -297,7 +306,8 @@ final class SpacesStoreTests: XCTestCase {
                                     throw ZenSpacesWriteError.conflict(itemID)
                                 },
                                 moveTab: Self.noMoveTab,
-                                setIcon: Self.noSetIcon)
+                                setIcon: Self.noSetIcon,
+                                createSpace: Self.noCreateSpace)
         async let first: Void? = try? store.move("t3", in: .space("{a}"), before: "t1")
         async let second: Void? = try? store.move("t2", in: .space("{a}"), before: nil)
         _ = await (first, second)
@@ -310,6 +320,7 @@ final class SpacesStoreTests: XCTestCase {
     private static let noMove: SpacesStore.Move = { _, _, _ in throw ZenSpacesWriteError.invalidName }
     private static let noMoveTab: SpacesStore.MoveTab = { _, _ in throw ZenSpacesWriteError.invalidName }
     private static let noSetIcon: SpacesStore.SetIcon = { _, _ in throw ZenSpacesWriteError.invalidName }
+    private static let noCreateSpace: SpacesStore.CreateSpace = { _ in throw ZenSpacesWriteError.invalidName }
 
     private func records(spaceName: String, modified: Date = .distantPast) -> [SpacesRecord] {
         let space = #"{"id":"{a}","kind":"space","data":{"uuid":"{a}","name":"\#(spaceName)","children":[]}}"#

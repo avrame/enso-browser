@@ -564,6 +564,69 @@ final class ZenSpacesWriterTests: XCTestCase {
         XCTAssertTrue(server.puts.isEmpty)
     }
 
+    // MARK: Creating spaces
+
+    func testCreatesTheSpaceThenListsItLast() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let bundle = try XCTUnwrap(collection)
+        let layout = #"{"id":"layout","kind":"layout","data":{"spaces":["{a}","{b}"],"essentials":{"default":["e1"]}}}"#
+        server.items["layout"] = try server.bso("layout", layout, bundle)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server, makeSpaceID: { "{new-space}" })
+
+        let created = try await writer.createSpace(named: "  Travel ", icon: .emoji("✈️"))
+
+        XCTAssertEqual(server.puts.map(\.id), ["{new-space}", "layout"], "space first, then the layout")
+        XCTAssertEqual(server.puts.first?.ifUnmodifiedSince, "0.00", "must not already exist")
+        let space = try decrypt(try XCTUnwrap(server.puts.first).payload)
+        XCTAssertEqual(space["kind"], .string("space"))
+        XCTAssertEqual(space["data"]?["uuid"], .string("{new-space}"))
+        XCTAssertEqual(space["data"]?["name"], .string("Travel"))
+        XCTAssertEqual(space["data"]?["icon"], .string("✈️"))
+        XCTAssertEqual(space["data"]?["containerGuid"], .null)
+        XCTAssertEqual(space["data"]?["children"], .array([]))
+        let defaultTheme = JSONValue.object(["type": .string("gradient"),
+                                             "gradientColors": .array([]),
+                                             "opacity": .number(0.5),
+                                             "texture": .number(0)])
+        XCTAssertEqual(space["data"]?["theme"], defaultTheme, "Zen's getTheme([])")
+        let updated = try decrypt(try XCTUnwrap(server.puts.last).payload)
+        XCTAssertEqual(updated["data"]?["spaces"], .array([.string("{a}"), .string("{b}"), .string("{new-space}")]))
+        XCTAssertEqual(updated["data"]?["essentials"], .object(["default": .array([.string("e1")])]), "kept")
+        XCTAssertEqual(created.records.map(\.id), ["{new-space}", "layout"])
+    }
+
+    func testCreatingWithoutALayoutStillCreatesTheSpace() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let created = try await ZenSpacesWriter(auth: try auth(), transport: server).createSpace(named: "Solo")
+        XCTAssertEqual(server.puts.count, 1)
+        XCTAssertNil(created.layout)
+        let uuidPattern = #"^\{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}$"#
+        XCTAssertNotNil(created.space.id.range(of: uuidPattern, options: .regularExpression), created.space.id)
+    }
+
+    func testCreateSpaceRefusesWithoutWriting() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server, makeSpaceID: { "{a}" })
+        for (name, icon, expected) in [("   ", SpaceIcon.none, ZenSpacesWriteError.invalidName),
+                                       ("Ok", .emoji("xy"), .invalidIcon)] {
+            do {
+                _ = try await writer.createSpace(named: name, icon: icon)
+                XCTFail("expected \(expected)")
+            } catch {
+                XCTAssertEqual(error as? ZenSpacesWriteError, expected)
+            }
+        }
+        do {
+            _ = try await writer.createSpace(named: "Clash")
+            XCTFail("an existing id must not be overwritten")
+        } catch {
+            XCTAssertEqual(error as? ZenSpacesWriteError, .idCollision("{a}"))
+        }
+        XCTAssertEqual(server.puts.map(\.id), ["{a}"], "only the refused conditional put was attempted")
+        let space = try decrypt(try XCTUnwrap(server.items["{a}"]).payload)
+        XCTAssertEqual(space["data"]?["name"], .string("Old"), "the existing space is untouched")
+    }
+
     func testGivesUpAfterRepeatedConflicts() async throws {
         let server = try makeServer(engineVersion: 3)
         server.concurrentEdits = Array(repeating: ("{a}", Self.space), count: 3)

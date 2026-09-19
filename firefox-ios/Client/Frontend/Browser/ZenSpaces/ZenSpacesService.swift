@@ -28,7 +28,8 @@ enum ZenSpacesService {
                                unpin: demo.unpin,
                                move: demo.move,
                                moveTab: demo.moveTab,
-                               setIcon: demo.setIcon)
+                               setIcon: demo.setIcon,
+                               createSpace: demo.createSpace)
         }
         #endif
         return SpacesStore(cache: SpacesCache(url: directory.appendingPathComponent("spaces.json")),
@@ -38,7 +39,8 @@ enum ZenSpacesService {
                            unpin: unpin,
                            move: move,
                            moveTab: moveTab,
-                           setIcon: setIcon)
+                           setIcon: setIcon,
+                           createSpace: createSpace)
     }
 
     private static func fetch() async throws -> SpacesFetchResult {
@@ -67,6 +69,10 @@ enum ZenSpacesService {
 
     private static func setIcon(_ uuid: String, _ icon: SpaceIcon) async throws -> SpacesRecord {
         try await ZenSpacesWriter(auth: auth()).setSpaceIcon(uuid, to: icon)
+    }
+
+    private static func createSpace(_ name: String) async throws -> CreatedSpace {
+        try await ZenSpacesWriter(auth: auth()).createSpace(named: name)
     }
 
     private static func auth() async throws -> SyncAuth {
@@ -142,6 +148,22 @@ private final class DemoSpaces {
         let record = SpacesRecord(id: parent.id, modified: Date(), cleartext: changed)
         records[index] = record
         return record
+    }
+
+    func createSpace(_ name: String) async throws -> CreatedSpace {
+        try await Task.sleep(for: .seconds(1))
+        let uuid = ZenSpacesWriter.newSpaceUUID()
+        let space = SpacesRecord(id: uuid,
+                                 modified: Date(),
+                                 cleartext: try ZenSpacesWriter.newSpace(uuid: uuid,
+                                                                         name: try ZenSpacesWriter.validName(name),
+                                                                         icon: nil))
+        records.append(space)
+        let layout = try edit(LayoutRecord.id, kind: "layout") { data in
+            guard case .array(let spaces)? = data["spaces"] else { return }
+            data["spaces"] = .array(spaces + [.string(uuid)])
+        }
+        return CreatedSpace(space: space, layout: layout)
     }
 
     func setIcon(_ uuid: String, _ icon: SpaceIcon) async throws -> SpacesRecord {

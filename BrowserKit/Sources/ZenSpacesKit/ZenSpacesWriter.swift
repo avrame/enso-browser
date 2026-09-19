@@ -24,6 +24,25 @@ public enum RenameTarget: Sendable, Equatable {
     }
 }
 
+/// A space or folder whose `children` list can be reordered.
+public enum ReorderParent: Sendable, Equatable {
+    case space(String)
+    case folder(String)
+
+    public var id: String {
+        switch self {
+        case .space(let id), .folder(let id): return id
+        }
+    }
+
+    public var kind: String {
+        switch self {
+        case .space: return "space"
+        case .folder: return "folder"
+        }
+    }
+}
+
 /// The records a pin wrote: the new tab and its space's updated `children`.
 public struct PinnedTab: Sendable {
     public let tab: SpacesRecord
@@ -265,6 +284,42 @@ public struct ZenSpacesWriter: Sendable {
             }
         }
         throw ZenSpacesWriteError.conflict(tabID)
+    }
+
+    /// Moves one child of a space or folder to just before `beforeID`, or to
+    /// the end when `beforeID` is nil or no longer listed. Sent as a move and
+    /// applied to the server's current list, so an ordering Zen changed in the
+    /// meantime is kept rather than overwritten.
+    public func move(_ itemID: String, in parent: ReorderParent, before beforeID: String?) async throws -> SpacesRecord {
+        try await checkEngineVersion()
+        let current: (bso: BSO, cleartext: Data)
+        do {
+            current = try await client.record(id: parent.id, in: ZenSpacesReader.collection)
+        } catch SyncStorageError.notFound {
+            throw ZenSpacesWriteError.recordNotFound(parent.id)
+        }
+        let raw = try JSONDecoder().decode(JSONValue.self, from: current.cleartext)
+        guard case .array(let children)? = raw["data"]?["children"], children.contains(.string(itemID)) else {
+            throw ZenSpacesWriteError.unexpectedRecord(id: itemID, reason: "not listed in its \(parent.kind)")
+        }
+        return try await updateRecord(id: parent.id, kind: parent.kind) { data in
+            guard case .array(let children)? = data["children"] else { return }
+            data["children"] = .array(Self.moving(itemID, before: beforeID, in: children))
+        }
+    }
+
+    /// `children` with `itemID` moved before `beforeID` (or last). An item no
+    /// longer listed leaves the list unchanged.
+    public static func moving(_ itemID: String, before beforeID: String?, in children: [JSONValue]) -> [JSONValue] {
+        let item = JSONValue.string(itemID)
+        guard children.contains(item), beforeID != itemID else { return children }
+        var result = children.filter { $0 != item }
+        if let beforeID, let index = result.firstIndex(of: .string(beforeID)) {
+            result.insert(item, at: index)
+        } else {
+            result.append(item)
+        }
+        return result
     }
 
     /// Spaces and folders both keep their name in `data.name`.

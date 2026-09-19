@@ -13,6 +13,32 @@ struct ZenCurrentPage {
     let faviconURL: URL?
 }
 
+/// A requested move of one item among its siblings: the item goes just before
+/// `beforeID`, or last when that is nil.
+private typealias ZenMove = (_ parent: ReorderParent, _ itemID: String, _ beforeID: String?) -> Void
+
+extension SidebarItem {
+    var itemID: String {
+        switch self {
+        case .tab(let tab): return tab.tabId
+        case .folder(let folder): return folder.record.folderId
+        case .split(let split): return split.record.splitId
+        case .missing(let id): return id
+        }
+    }
+
+    /// Turns a List drag (`onMove`) into the item and the sibling it now precedes.
+    static func move(in items: [SidebarItem],
+                     from source: IndexSet,
+                     to destination: Int) -> (item: String, before: String?)? {
+        guard let from = source.first, source.count == 1, items.indices.contains(from) else { return nil }
+        var ids = items.map(\.itemID)
+        ids.move(fromOffsets: source, toOffset: destination)
+        guard ids != items.map(\.itemID), let position = ids.firstIndex(of: items[from].itemID) else { return nil }
+        return (items[from].itemID, position + 1 < ids.count ? ids[position + 1] : nil)
+    }
+}
+
 /// A space or folder the user asked to rename, with the name to start from.
 private struct RenameRequest {
     let target: RenameTarget
@@ -121,6 +147,17 @@ struct ZenSpacesSheet: View {
         }
     }
 
+    /// Shown at once by the store; only a refusal is reported.
+    private func move(_ parent: ReorderParent, _ itemID: String, _ beforeID: String?) {
+        Task {
+            do {
+                try await store.move(itemID, in: parent, before: beforeID)
+            } catch {
+                writeError = Self.message(for: error)
+            }
+        }
+    }
+
     private func unpin(_ tab: TabRecord) {
         isSaving = true
         Task {
@@ -184,6 +221,7 @@ struct ZenSpacesSheet: View {
                              onRename: startRenaming,
                              onPin: pin(to:),
                              onUnpin: { unpinning = $0 },
+                             onMove: move,
                              onOpen: onOpen,
                              onRefresh: { await store.refresh() })
                     .tag(space.record.uuid)
@@ -315,8 +353,11 @@ private struct ZenSpacePage: View {
     let onRename: (RenameRequest) -> Void
     let onPin: (SpaceRecord) -> Void
     let onUnpin: (TabRecord) -> Void
+    let onMove: ZenMove
     let onOpen: (TabRecord) -> Void
     let onRefresh: () async -> Void
+
+    @State private var editMode: EditMode = .inactive
 
     var body: some View {
         VStack(spacing: 0) {
@@ -326,11 +367,17 @@ private struct ZenSpacePage: View {
                     if space.items.isEmpty {
                         Text("No pinned tabs").foregroundStyle(.secondary)
                     }
-                    ForEach(Array(space.items.enumerated()), id: \.offset) { _, item in
-                        ZenSidebarItemView(item: item, onOpen: onOpen, onRename: onRename, onUnpin: onUnpin)
+                    ForEach(space.items, id: \.itemID) { item in
+                        ZenSidebarItemView(item: item, onOpen: onOpen, onRename: onRename, onUnpin: onUnpin, onMove: onMove)
+                    }
+                    .onMove { source, destination in
+                        if let move = SidebarItem.move(in: space.items, from: source, to: destination) {
+                            onMove(.space(space.record.uuid), move.item, move.before)
+                        }
                     }
                 }
             }
+            .environment(\.editMode, $editMode)
             .listStyle(.insetGrouped)
             .contentMargins(.top, 4, for: .scrollContent)
             .scrollContentBackground(.hidden)
@@ -355,7 +402,13 @@ private struct ZenSpacePage: View {
                     .fixedSize()
             }
             Spacer(minLength: 8)
-            if let currentPage {
+            if editMode.isEditing {
+                Button("Done") { withAnimation { editMode = .inactive } }
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .fixedSize()
+            } else if let currentPage {
                 pinButton(currentPage)
                     .fixedSize()
             }
@@ -425,6 +478,12 @@ private struct ZenSpacePage: View {
             } label: {
                 Label("Rename Space…", systemImage: "pencil")
             }
+            Button {
+                withAnimation { editMode = .active }
+            } label: {
+                Label("Reorder…", systemImage: "arrow.up.arrow.down")
+            }
+            .disabled(space.items.count < 2)
         } label: {
             HStack(spacing: 4) {
                 Text(space.record.name)
@@ -449,6 +508,7 @@ private struct ZenSidebarItemView: View {
     /// Offered on tabs directly in a space or folder; split members are not
     /// listed there, so the writer would refuse them.
     let onUnpin: (TabRecord) -> Void
+    let onMove: ZenMove
 
     var body: some View {
         switch item {
@@ -468,8 +528,13 @@ private struct ZenSidebarItemView: View {
             ForEach(split.tabs, id: \.tabId) { tabRow($0).padding(.leading, 16) }
         case .folder(let folder):
             DisclosureGroup {
-                ForEach(Array(folder.items.enumerated()), id: \.offset) { _, child in
-                    ZenSidebarItemView(item: child, onOpen: onOpen, onRename: onRename, onUnpin: onUnpin)
+                ForEach(folder.items, id: \.itemID) { child in
+                    ZenSidebarItemView(item: child, onOpen: onOpen, onRename: onRename, onUnpin: onUnpin, onMove: onMove)
+                }
+                .onMove { source, destination in
+                    if let move = SidebarItem.move(in: folder.items, from: source, to: destination) {
+                        onMove(.folder(folder.record.folderId), move.item, move.before)
+                    }
                 }
             } label: {
                 Label(folder.record.name, systemImage: folder.record.live == nil ? "folder" : "dot.radiowaves.up.forward")

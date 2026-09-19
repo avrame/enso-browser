@@ -25,14 +25,16 @@ enum ZenSpacesService {
                                fetch: demo.fetch,
                                rename: demo.rename,
                                pin: demo.pin,
-                               unpin: demo.unpin)
+                               unpin: demo.unpin,
+                               move: demo.move)
         }
         #endif
         return SpacesStore(cache: SpacesCache(url: directory.appendingPathComponent("spaces.json")),
                            fetch: fetch,
                            rename: rename,
                            pin: pin,
-                           unpin: unpin)
+                           unpin: unpin,
+                           move: move)
     }
 
     private static func fetch() async throws -> SpacesFetchResult {
@@ -49,6 +51,10 @@ enum ZenSpacesService {
 
     private static func unpin(_ tabID: String) async throws -> UnpinnedTab {
         try await ZenSpacesWriter(auth: auth()).unpinTab(tabID)
+    }
+
+    private static func move(_ itemID: String, _ parent: ReorderParent, _ beforeID: String?) async throws -> SpacesRecord {
+        try await ZenSpacesWriter(auth: auth()).move(itemID, in: parent, before: beforeID)
     }
 
     private static func auth() async throws -> SyncAuth {
@@ -109,6 +115,21 @@ private final class DemoSpaces {
         records.append(tab)
         records[index] = space
         return PinnedTab(tab: tab, space: space)
+    }
+
+    func move(_ itemID: String, _ parent: ReorderParent, _ beforeID: String?) async throws -> SpacesRecord {
+        try await Task.sleep(for: .seconds(1))
+        guard let index = records.firstIndex(where: { $0.id == parent.id }),
+              let raw = records[index].raw,
+              let cleartext = try? JSONEncoder().encode(raw)
+        else { throw ZenSpacesWriteError.recordNotFound(parent.id) }
+        let changed = try ZenSpacesWriter.changed(cleartext, id: parent.id, kind: parent.kind) { data in
+            guard case .array(let children)? = data["children"] else { return }
+            data["children"] = .array(ZenSpacesWriter.moving(itemID, before: beforeID, in: children))
+        }
+        let record = SpacesRecord(id: parent.id, modified: Date(), cleartext: changed)
+        records[index] = record
+        return record
     }
 
     func unpin(_ tabID: String) async throws -> UnpinnedTab {

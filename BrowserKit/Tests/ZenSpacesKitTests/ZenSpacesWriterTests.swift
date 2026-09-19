@@ -368,6 +368,76 @@ final class ZenSpacesWriterTests: XCTestCase {
         XCTAssertTrue(server.puts.isEmpty)
     }
 
+    // MARK: Reordering
+
+    func testMovingIsAPureListOperation() {
+        let list: [JSONValue] = ["a", "b", "c", "d"].map(JSONValue.string)
+        func ids(_ values: [JSONValue]) -> [String] { values.compactMap(\.stringValue) }
+        XCTAssertEqual(ids(ZenSpacesWriter.moving("d", before: "b", in: list)), ["a", "d", "b", "c"])
+        XCTAssertEqual(ids(ZenSpacesWriter.moving("a", before: "d", in: list)), ["b", "c", "a", "d"])
+        XCTAssertEqual(ids(ZenSpacesWriter.moving("a", before: nil, in: list)), ["b", "c", "d", "a"], "nil means last")
+        let staleAnchor = ids(ZenSpacesWriter.moving("b", before: "gone", in: list))
+        XCTAssertEqual(staleAnchor, ["a", "c", "d", "b"], "an anchor no longer listed means last")
+        let staleItem = ids(ZenSpacesWriter.moving("x", before: "a", in: list))
+        XCTAssertEqual(staleItem, ["a", "b", "c", "d"], "an item no longer listed changes nothing")
+        XCTAssertEqual(ids(ZenSpacesWriter.moving("b", before: "b", in: list)), ["a", "b", "c", "d"])
+    }
+
+    func testMoveRewritesOnlyTheOrder() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+
+        let record = try await writer.move("f1", in: .space("{a}"), before: "t1")
+
+        XCTAssertEqual(server.puts.map(\.id), ["{a}"])
+        XCTAssertEqual(server.puts.first?.ifUnmodifiedSince, "1700000000.00")
+        let space = try decrypt(try XCTUnwrap(server.puts.first).payload)
+        XCTAssertEqual(space["data"]?["children"], .array([.string("f1"), .string("t1")]))
+        XCTAssertEqual(space["data"]?["name"], .string("Old"))
+        XCTAssertEqual(space["data"]?["futureField"], .object(["x": .bool(true)]))
+        guard case .space(let updated) = record.body else { return XCTFail("\(record.body)") }
+        XCTAssertEqual(updated.children, ["f1", "t1"])
+    }
+
+    func testMoveAppliesToZensNewerOrder() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let zen = Self.space.replacingOccurrences(of: #""children":["t1","f1"]"#,
+                                                  with: #""children":["t1","t7","f1"]"#)
+        server.concurrentEdits = [("{a}", zen)]
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+
+        _ = try await writer.move("f1", in: .space("{a}"), before: "t1")
+
+        let space = try decrypt(try XCTUnwrap(server.puts.last).payload)
+        let expected = JSONValue.array([.string("f1"), .string("t1"), .string("t7")])
+        XCTAssertEqual(space["data"]?["children"], expected, "Zen's new tab is kept and the move still applies")
+    }
+
+    func testMoveRefusesWithoutWriting() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+        do {
+            _ = try await writer.move("stranger", in: .space("{a}"), before: nil)
+            XCTFail("expected refusal")
+        } catch {
+            let expected = ZenSpacesWriteError.unexpectedRecord(id: "stranger", reason: "not listed in its space")
+            XCTAssertEqual(error as? ZenSpacesWriteError, expected)
+        }
+        do {
+            _ = try await writer.move("t1", in: .folder("{a}"), before: nil)
+            XCTFail("a space is not a folder")
+        } catch {
+            XCTAssertEqual(error as? ZenSpacesWriteError, .unexpectedRecord(id: "{a}", reason: "not a folder"))
+        }
+        do {
+            _ = try await writer.move("t1", in: .space("{gone}"), before: nil)
+            XCTFail("expected not found")
+        } catch {
+            XCTAssertEqual(error as? ZenSpacesWriteError, .recordNotFound("{gone}"))
+        }
+        XCTAssertTrue(server.puts.isEmpty)
+    }
+
     func testGivesUpAfterRepeatedConflicts() async throws {
         let server = try makeServer(engineVersion: 3)
         server.concurrentEdits = Array(repeating: ("{a}", Self.space), count: 3)

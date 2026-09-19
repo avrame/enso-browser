@@ -85,12 +85,17 @@ public final class SpacesStore: ObservableObject {
     public typealias Rename = @MainActor (_ target: RenameTarget, _ name: String) async throws -> SpacesRecord
     public typealias Pin = @MainActor (_ page: PinnablePage, _ spaceUUID: String) async throws -> PinnedTab
     public typealias Unpin = @MainActor (_ tabID: String) async throws -> UnpinnedTab
+    public typealias Move = @MainActor (_ itemID: String, _ parent: ReorderParent, _ beforeID: String?)
+        async throws -> SpacesRecord
 
     private let cache: SpacesCache
     private let fetch: @MainActor () async throws -> SpacesFetchResult
     private let rename: Rename
     private let pin: Pin
     private let unpin: Unpin
+    private let move: Move
+    /// Moves are sent one at a time, in the order they were made.
+    private var lastMove: Task<Void, Never>?
     private var records: [SpacesRecord] = []
     /// Ids this store wrote, kept until a fetch has caught up with them.
     private var writtenLocally: Set<String> = []
@@ -99,12 +104,14 @@ public final class SpacesStore: ObservableObject {
                 fetch: @escaping @MainActor () async throws -> SpacesFetchResult,
                 rename: @escaping Rename,
                 pin: @escaping Pin,
-                unpin: @escaping Unpin) {
+                unpin: @escaping Unpin,
+                move: @escaping Move) {
         self.cache = cache
         self.fetch = fetch
         self.rename = rename
         self.pin = pin
         self.unpin = unpin
+        self.move = move
         if let cached = cache.load() {
             records = cached.records
             snapshot = SpacesSnapshot(records: cached.records)
@@ -152,6 +159,40 @@ public final class SpacesStore: ObservableObject {
         let unpinned = try await unpin(tabID)
         replace(unpinned.parent)
         replace(unpinned.tombstone)
+    }
+
+    /// Unlike the other writes this shows at once, so a dragged row stays
+    /// where it was dropped; if the server refuses, the parent goes back to
+    /// how it was before this move.
+    public func move(_ itemID: String, in parent: ReorderParent, before beforeID: String?) async throws {
+        guard let index = records.firstIndex(where: { $0.id == parent.id }),
+              let raw = records[index].raw,
+              case .array(let children)? = raw["data"]?["children"],
+              let cleartext = try? JSONEncoder().encode(raw)
+        else { throw ZenSpacesWriteError.recordNotFound(parent.id) }
+        let previous = records[index]
+        let local = try ZenSpacesWriter.changed(cleartext, id: parent.id, kind: parent.kind) { data in
+            data["children"] = .array(ZenSpacesWriter.moving(itemID, before: beforeID, in: children))
+        }
+        replace(SpacesRecord(id: parent.id, modified: Date(), cleartext: local))
+
+        let before = lastMove
+        let write = Task { () -> Result<SpacesRecord, Error> in
+            await before?.value
+            do {
+                return .success(try await move(itemID, parent, beforeID))
+            } catch {
+                return .failure(error)
+            }
+        }
+        lastMove = Task { _ = await write.value }
+        switch await write.value {
+        case .success(let updated):
+            replace(updated)
+        case .failure(let error):
+            replace(previous)
+            throw error
+        }
     }
 
     /// A fetch that started before a local write finished must not undo it:

@@ -40,6 +40,7 @@ struct ZenSpacesSheet: View {
     @State private var draftName = ""
     @State private var isSaving = false
     @State private var writeError: String?
+    @State private var unpinning: TabRecord?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -64,6 +65,15 @@ struct ZenSpacesSheet: View {
                 .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         } message: { _ in
             Text("The new name also appears in Zen on your other devices.")
+        }
+        .confirmationDialog("Unpin “\(unpinning?.displayTitle ?? "")”?",
+                            isPresented: isPresent($unpinning),
+                            titleVisibility: .visible,
+                            presenting: unpinning) { tab in
+            Button("Unpin", role: .destructive) { unpin(tab) }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("It's removed from the space and closed in Zen on your other devices.")
         }
         .alert("Couldn't Save to Zen", isPresented: isPresent($writeError), presenting: writeError) { _ in
             Button("OK", role: .cancel) {}
@@ -105,6 +115,18 @@ struct ZenSpacesSheet: View {
                 if let tab = try await store.pin(page, toSpace: space.uuid) {
                     onPinned(tab)
                 }
+            } catch {
+                writeError = Self.message(for: error)
+            }
+        }
+    }
+
+    private func unpin(_ tab: TabRecord) {
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                try await store.unpin(tabID: tab.tabId)
             } catch {
                 writeError = Self.message(for: error)
             }
@@ -161,6 +183,7 @@ struct ZenSpacesSheet: View {
                              isSaving: isSaving,
                              onRename: startRenaming,
                              onPin: pin(to:),
+                             onUnpin: { unpinning = $0 },
                              onOpen: onOpen,
                              onRefresh: { await store.refresh() })
                     .tag(space.record.uuid)
@@ -291,6 +314,7 @@ private struct ZenSpacePage: View {
     let isSaving: Bool
     let onRename: (RenameRequest) -> Void
     let onPin: (SpaceRecord) -> Void
+    let onUnpin: (TabRecord) -> Void
     let onOpen: (TabRecord) -> Void
     let onRefresh: () async -> Void
 
@@ -303,7 +327,7 @@ private struct ZenSpacePage: View {
                         Text("No pinned tabs").foregroundStyle(.secondary)
                     }
                     ForEach(Array(space.items.enumerated()), id: \.offset) { _, item in
-                        ZenSidebarItemView(item: item, onOpen: onOpen, onRename: onRename)
+                        ZenSidebarItemView(item: item, onOpen: onOpen, onRename: onRename, onUnpin: onUnpin)
                     }
                 }
             }
@@ -422,11 +446,21 @@ private struct ZenSidebarItemView: View {
     let item: SidebarItem
     let onOpen: (TabRecord) -> Void
     let onRename: (RenameRequest) -> Void
+    /// Offered on tabs directly in a space or folder; split members are not
+    /// listed there, so the writer would refuse them.
+    let onUnpin: (TabRecord) -> Void
 
     var body: some View {
         switch item {
         case .tab(let tab):
+            // Long-press, not a swipe: a sideways swipe pages between spaces.
             tabRow(tab)
+                .contextMenu {
+                    Button(role: .destructive) { onUnpin(tab) } label: {
+                        Label("Unpin", systemImage: "pin.slash")
+                    }
+                }
+                .accessibilityAction(named: "Unpin") { onUnpin(tab) }
         case .split(let split):
             Label("Split view", systemImage: "rectangle.split.2x1")
                 .font(.caption)
@@ -435,7 +469,7 @@ private struct ZenSidebarItemView: View {
         case .folder(let folder):
             DisclosureGroup {
                 ForEach(Array(folder.items.enumerated()), id: \.offset) { _, child in
-                    ZenSidebarItemView(item: child, onOpen: onOpen, onRename: onRename)
+                    ZenSidebarItemView(item: child, onOpen: onOpen, onRename: onRename, onUnpin: onUnpin)
                 }
             } label: {
                 Label(folder.record.name, systemImage: folder.record.live == nil ? "folder" : "dot.radiowaves.up.forward")

@@ -35,6 +35,17 @@ public struct PinnedTab: Sendable {
     }
 }
 
+/// The records an unpin wrote: the tab's parent without it, and the tab's tombstone.
+public struct UnpinnedTab: Sendable {
+    public let parent: SpacesRecord
+    public let tombstone: SpacesRecord
+
+    public init(parent: SpacesRecord, tombstone: SpacesRecord) {
+        self.parent = parent
+        self.tombstone = tombstone
+    }
+}
+
 public enum ZenSpacesWriteError: Error, Equatable, CustomStringConvertible {
     /// Writes are only safe against the exact format this client knows.
     case unsupportedEngineVersion(Int?)
@@ -67,7 +78,8 @@ public enum ZenSpacesWriteError: Error, Equatable, CustomStringConvertible {
 /// Changes Zen records on the server one field at a time. Every write
 /// re-reads the server copy, changes only the named field, keeps every
 /// other field as received (including ones this client does not model),
-/// and is conditional on that copy being unchanged. Never deletes.
+/// and is conditional on that copy being unchanged. The only deletion is
+/// `unpinTab`, which removes one pinned tab after checks.
 public struct ZenSpacesWriter: Sendable {
     private let client: SyncStorageClient
     private let maxAttempts = 3
@@ -165,6 +177,94 @@ public struct ZenSpacesWriter: Sendable {
         ]
         let record: JSONValue = .object(["id": .string(id), "kind": .string("tab"), "data": .object(data)])
         return try JSONEncoder().encode(record)
+    }
+
+    /// Removes a pinned tab from its space or folder. Zen closes the tab on
+    /// every desktop, as when the tab is closed there. Essentials and tabs in a
+    /// split view are refused, as is a tab its parent does not list.
+    ///
+    /// The parent's `children` changes first and the tombstone goes last: if
+    /// the tombstone fails, the tab record still names its space, so Zen keeps
+    /// the tab and re-lists it on its next upload. Nothing is lost.
+    public func unpinTab(_ tabID: String) async throws -> UnpinnedTab {
+        try await checkEngineVersion()
+
+        let tab = try await pinnedTab(tabID)
+        let parentKind = tab.folderID == nil ? "space" : "folder"
+        guard let parentID = tab.folderID ?? tab.spaceID else {
+            throw ZenSpacesWriteError.unexpectedRecord(id: tabID, reason: "not in a space")
+        }
+        let parent: (bso: BSO, cleartext: Data)
+        do {
+            parent = try await client.record(id: parentID, in: ZenSpacesReader.collection)
+        } catch SyncStorageError.notFound {
+            throw ZenSpacesWriteError.recordNotFound(parentID)
+        }
+        let parentRaw = try JSONDecoder().decode(JSONValue.self, from: parent.cleartext)
+        guard case .array(let children)? = parentRaw["data"]?["children"], children.contains(.string(tabID)) else {
+            let reason = "not listed in its \(parentKind); it may be in a split view"
+            throw ZenSpacesWriteError.unexpectedRecord(id: tabID, reason: reason)
+        }
+
+        let updatedParent = try await updateRecord(id: parentID, kind: parentKind) { data in
+            guard case .array(let children)? = data["children"] else { return }
+            data["children"] = .array(children.filter { $0 != .string(tabID) })
+        }
+        return UnpinnedTab(parent: updatedParent, tombstone: try await writeTombstone(tabID))
+    }
+
+    private struct PinnedTabInfo {
+        let bso: BSO
+        let spaceID: String?
+        let folderID: String?
+    }
+
+    /// Reads a tab and checks it is one `unpinTab` may remove.
+    private func pinnedTab(_ tabID: String) async throws -> PinnedTabInfo {
+        let current: (bso: BSO, cleartext: Data)
+        do {
+            current = try await client.record(id: tabID, in: ZenSpacesReader.collection)
+        } catch SyncStorageError.notFound {
+            throw ZenSpacesWriteError.recordNotFound(tabID)
+        }
+        let raw = try JSONDecoder().decode(JSONValue.self, from: current.cleartext)
+        guard raw["deleted"]?.boolValue != true else { throw ZenSpacesWriteError.recordNotFound(tabID) }
+        guard raw["kind"]?.stringValue == "tab", let data = raw["data"] else {
+            throw ZenSpacesWriteError.unexpectedRecord(id: tabID, reason: "not a tab")
+        }
+        guard data["essential"]?.boolValue != true else {
+            throw ZenSpacesWriteError.unexpectedRecord(id: tabID, reason: "an Essential")
+        }
+        guard data["pinned"]?.boolValue != false else {
+            throw ZenSpacesWriteError.unexpectedRecord(id: tabID, reason: "not pinned")
+        }
+        return PinnedTabInfo(bso: current.bso,
+                             spaceID: data["workspaceUuid"]?.stringValue,
+                             folderID: data["folderId"]?.stringValue)
+    }
+
+    /// Conditional on the tab being unchanged since it was read; a tab that
+    /// is already gone counts as done.
+    private func writeTombstone(_ tabID: String) async throws -> SpacesRecord {
+        let tombstone = try JSONEncoder().encode(JSONValue.object(["id": .string(tabID), "deleted": .bool(true)]))
+        for _ in 0..<maxAttempts {
+            let tab: PinnedTabInfo
+            do {
+                tab = try await pinnedTab(tabID)
+            } catch ZenSpacesWriteError.recordNotFound {
+                return SpacesRecord(id: tabID, modified: Date(), cleartext: tombstone)
+            }
+            do {
+                let modified = try await client.put(id: tabID,
+                                                    in: ZenSpacesReader.collection,
+                                                    cleartext: tombstone,
+                                                    ifUnmodifiedSince: tab.bso.modified)
+                return SpacesRecord(id: tabID, modified: Date(timeIntervalSince1970: modified), cleartext: tombstone)
+            } catch SyncStorageError.modifiedSince {
+                continue
+            }
+        }
+        throw ZenSpacesWriteError.conflict(tabID)
     }
 
     /// Spaces and folders both keep their name in `data.name`.

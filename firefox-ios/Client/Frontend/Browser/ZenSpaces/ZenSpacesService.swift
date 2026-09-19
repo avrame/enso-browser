@@ -24,13 +24,15 @@ enum ZenSpacesService {
             return SpacesStore(cache: SpacesCache(url: directory.appendingPathComponent("demo.json")),
                                fetch: demo.fetch,
                                rename: demo.rename,
-                               pin: demo.pin)
+                               pin: demo.pin,
+                               unpin: demo.unpin)
         }
         #endif
         return SpacesStore(cache: SpacesCache(url: directory.appendingPathComponent("spaces.json")),
                            fetch: fetch,
                            rename: rename,
-                           pin: pin)
+                           pin: pin,
+                           unpin: unpin)
     }
 
     private static func fetch() async throws -> SpacesFetchResult {
@@ -43,6 +45,10 @@ enum ZenSpacesService {
 
     private static func pin(_ page: PinnablePage, _ spaceUUID: String) async throws -> PinnedTab {
         try await ZenSpacesWriter(auth: auth()).pinTab(url: page.url, title: page.title, icon: page.icon, inSpace: spaceUUID)
+    }
+
+    private static func unpin(_ tabID: String) async throws -> UnpinnedTab {
+        try await ZenSpacesWriter(auth: auth()).unpinTab(tabID)
     }
 
     private static func auth() async throws -> SyncAuth {
@@ -103,5 +109,28 @@ private final class DemoSpaces {
         records.append(tab)
         records[index] = space
         return PinnedTab(tab: tab, space: space)
+    }
+
+    func unpin(_ tabID: String) async throws -> UnpinnedTab {
+        try await Task.sleep(for: .seconds(1))
+        guard let tabIndex = records.firstIndex(where: { $0.id == tabID }),
+              case .tab(let tab) = records[tabIndex].body,
+              let parentID = tab.folderId ?? tab.workspaceUuid,
+              let parentIndex = records.firstIndex(where: { $0.id == parentID }),
+              let raw = records[parentIndex].raw,
+              let cleartext = try? JSONEncoder().encode(raw)
+        else { throw ZenSpacesWriteError.recordNotFound(tabID) }
+        let kind = tab.folderId == nil ? "space" : "folder"
+        let changed = try ZenSpacesWriter.changed(cleartext, id: parentID, kind: kind) { data in
+            guard case .array(let children)? = data["children"] else { return }
+            data["children"] = .array(children.filter { $0 != .string(tabID) })
+        }
+        let parent = SpacesRecord(id: parentID, modified: Date(), cleartext: changed)
+        let tombstone = SpacesRecord(id: tabID,
+                                     modified: Date(),
+                                     cleartext: Data(#"{"id":"\#(tabID)","deleted":true}"#.utf8))
+        records[parentIndex] = parent
+        records[tabIndex] = tombstone
+        return UnpinnedTab(parent: parent, tombstone: tombstone)
     }
 }

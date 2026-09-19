@@ -84,11 +84,13 @@ public final class SpacesStore: ObservableObject {
 
     public typealias Rename = @MainActor (_ target: RenameTarget, _ name: String) async throws -> SpacesRecord
     public typealias Pin = @MainActor (_ page: PinnablePage, _ spaceUUID: String) async throws -> PinnedTab
+    public typealias Unpin = @MainActor (_ tabID: String) async throws -> UnpinnedTab
 
     private let cache: SpacesCache
     private let fetch: @MainActor () async throws -> SpacesFetchResult
     private let rename: Rename
     private let pin: Pin
+    private let unpin: Unpin
     private var records: [SpacesRecord] = []
     /// Ids this store wrote, kept until a fetch has caught up with them.
     private var writtenLocally: Set<String> = []
@@ -96,11 +98,13 @@ public final class SpacesStore: ObservableObject {
     public init(cache: SpacesCache,
                 fetch: @escaping @MainActor () async throws -> SpacesFetchResult,
                 rename: @escaping Rename,
-                pin: @escaping Pin) {
+                pin: @escaping Pin,
+                unpin: @escaping Unpin) {
         self.cache = cache
         self.fetch = fetch
         self.rename = rename
         self.pin = pin
+        self.unpin = unpin
         if let cached = cache.load() {
             records = cached.records
             snapshot = SpacesSnapshot(records: cached.records)
@@ -141,6 +145,13 @@ public final class SpacesStore: ObservableObject {
         replace(pinned.space)
         if case .tab(let tab) = pinned.tab.body { return tab }
         return nil
+    }
+
+    /// Unpins on the server first; the tab disappears here once it is gone there.
+    public func unpin(tabID: String) async throws {
+        let unpinned = try await unpin(tabID)
+        replace(unpinned.parent)
+        replace(unpinned.tombstone)
     }
 
     /// A fetch that started before a local write finished must not undo it:

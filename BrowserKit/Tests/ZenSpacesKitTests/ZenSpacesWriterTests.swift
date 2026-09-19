@@ -258,6 +258,116 @@ final class ZenSpacesWriterTests: XCTestCase {
                                  options: .regularExpression), id)
     }
 
+    // MARK: Unpinning
+
+    private static let pinnedTab = #"{"id":"t1","kind":"tab","data":{"tabId":"t1","url":"https://a/","#
+        + #""pinned":true,"essential":false,"workspaceUuid":"{a}","folderId":null}}"#
+    private static let folderTab = #"{"id":"t2","kind":"tab","data":{"tabId":"t2","url":"https://b/","#
+        + #""pinned":true,"essential":false,"workspaceUuid":"{a}","folderId":"f1"}}"#
+
+    func testUnpinUpdatesTheSpaceThenWritesTheTombstone() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let bundle = try XCTUnwrap(collection)
+        server.items["t1"] = try server.bso("t1", Self.pinnedTab, bundle, modified: 1_700_000_100)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+
+        let unpinned = try await writer.unpinTab("t1")
+
+        XCTAssertEqual(server.puts.map(\.id), ["{a}", "t1"], "the space first, the tombstone last")
+        let space = try decrypt(try XCTUnwrap(server.puts.first).payload)
+        XCTAssertEqual(space["data"]?["children"], .array([.string("f1")]))
+        XCTAssertEqual(space["data"]?["futureField"], .object(["x": .bool(true)]), "nothing else changes")
+        let tombstone = try decrypt(try XCTUnwrap(server.puts.last).payload)
+        XCTAssertEqual(tombstone, .object(["id": .string("t1"), "deleted": .bool(true)]))
+        XCTAssertEqual(server.puts.last?.ifUnmodifiedSince, "1700000100.00", "only if the tab is unchanged")
+        XCTAssertEqual(unpinned.tombstone.body, .tombstone)
+    }
+
+    func testUnpinFromAFolderEditsTheFolder() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let bundle = try XCTUnwrap(collection)
+        let folder = Self.liveFolder.replacingOccurrences(of: #""children":["t1","sp1"]"#,
+                                                          with: #""children":["t2","sp1"]"#)
+        server.items["f1"] = try server.bso("f1", folder, bundle)
+        server.items["t2"] = try server.bso("t2", Self.folderTab, bundle)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+
+        _ = try await writer.unpinTab("t2")
+
+        XCTAssertEqual(server.puts.map(\.id), ["f1", "t2"])
+        let updated = try decrypt(try XCTUnwrap(server.puts.first).payload)
+        XCTAssertEqual(updated["data"]?["children"], .array([.string("sp1")]))
+        XCTAssertEqual(updated["data"]?["live"]?["type"], .string("rss"), "the live feed is kept")
+    }
+
+    func testUnpinRefusesWithoutWriting() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let bundle = try XCTUnwrap(collection)
+        func tab(_ id: String, _ replacing: String, _ with: String) -> String {
+            Self.pinnedTab.replacingOccurrences(of: "\"t1\"", with: "\"\(id)\"")
+                .replacingOccurrences(of: replacing, with: with)
+        }
+        server.items["e1"] = try server.bso("e1", tab("e1", #""essential":false"#, #""essential":true"#), bundle)
+        server.items["n1"] = try server.bso("n1", tab("n1", #""pinned":true"#, #""pinned":false"#), bundle)
+        server.items["t5"] = try server.bso("t5", tab("t5", "", ""), bundle)
+        server.items["gone"] = try server.bso("gone", #"{"id":"gone","deleted":true}"#, bundle)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+
+        struct Case {
+            let id: String
+            let expected: ZenSpacesWriteError
+        }
+        let cases = [
+            Case(id: "e1", expected: .unexpectedRecord(id: "e1", reason: "an Essential")),
+            Case(id: "n1", expected: .unexpectedRecord(id: "n1", reason: "not pinned")),
+            Case(id: "t5", expected: .unexpectedRecord(id: "t5",
+                                                       reason: "not listed in its space; it may be in a split view")),
+            Case(id: "f1", expected: .unexpectedRecord(id: "f1", reason: "not a tab")),
+            Case(id: "gone", expected: .recordNotFound("gone")),
+            Case(id: "missing", expected: .recordNotFound("missing")),
+        ]
+        for test in cases {
+            do {
+                _ = try await writer.unpinTab(test.id)
+                XCTFail("expected \(test.expected)")
+            } catch {
+                XCTAssertEqual(error as? ZenSpacesWriteError, test.expected)
+            }
+        }
+        XCTAssertTrue(server.puts.isEmpty, "nothing is written when refused")
+    }
+
+    func testUnpinKeepsAConcurrentReorderAndRetriesTheTombstone() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let bundle = try XCTUnwrap(collection)
+        server.items["t1"] = try server.bso("t1", Self.pinnedTab, bundle)
+        let reordered = Self.space.replacingOccurrences(of: #""children":["t1","f1"]"#,
+                                                        with: #""children":["f1","t1","t9"]"#)
+        let retitled = Self.pinnedTab.replacingOccurrences(of: #""url":"https://a/""#,
+                                                           with: #""url":"https://a/","title":"New""#)
+        server.concurrentEdits = [("{a}", reordered), ("t1", retitled)]
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+
+        _ = try await writer.unpinTab("t1")
+
+        let space = try decrypt(try XCTUnwrap(server.puts.last { $0.id == "{a}" }).payload)
+        XCTAssertEqual(space["data"]?["children"], .array([.string("f1"), .string("t9")]))
+        let tombstone = try decrypt(try XCTUnwrap(server.puts.last).payload)
+        XCTAssertEqual(tombstone["deleted"], .bool(true))
+        XCTAssertEqual(server.puts.filter { $0.id == "t1" }.count, 2, "retried after the tab changed")
+    }
+
+    func testUnpinRefusesOtherEngineVersions() async throws {
+        let server = try makeServer(engineVersion: 4)
+        do {
+            _ = try await ZenSpacesWriter(auth: try auth(), transport: server).unpinTab("t1")
+            XCTFail("expected refusal")
+        } catch {
+            XCTAssertEqual(error as? ZenSpacesWriteError, .unsupportedEngineVersion(4))
+        }
+        XCTAssertTrue(server.puts.isEmpty)
+    }
+
     func testGivesUpAfterRepeatedConflicts() async throws {
         let server = try makeServer(engineVersion: 3)
         server.concurrentEdits = Array(repeating: ("{a}", Self.space), count: 3)

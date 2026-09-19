@@ -576,11 +576,21 @@ final class BrowserCoordinator: BaseCoordinator,
     }
 
     func showZenSpaces(sourceView: UIView?) {
-        let sheet = ZenSpacesSheet(store: ZenSpacesService.store) { [weak self] pinned in
-            self?.router.dismiss(animated: true) {
-                self?.openZenSpaceTab(pinned)
-            }
-        }
+        let selected = tabManager.selectedTab
+        let sheet = ZenSpacesSheet(
+            store: ZenSpacesService.store,
+            currentPage: selected.flatMap(Self.zenPinnablePage),
+            onOpen: { [weak self] pinned in
+                self?.router.dismiss(animated: true) {
+                    self?.openZenSpaceTab(pinned)
+                }
+            },
+            onPinned: { pinned in
+                // The page just pinned is already open: tapping the pin should return to it.
+                if let selected {
+                    ZenSpacesService.pinnedTabLinks.link(pinned.tabId, to: selected.tabUUID)
+                }
+            })
         let controller = UIHostingController(rootView: sheet)
         if controller.shouldUseiPadSetup(), let sourceView {
             controller.modalPresentationStyle = .popover
@@ -592,6 +602,15 @@ final class BrowserCoordinator: BaseCoordinator,
             controller.sheetPresentationController?.prefersGrabberVisible = true
         }
         present(controller)
+    }
+
+    /// Only a normal tab showing a web page can be pinned into Zen.
+    private static func zenPinnablePage(_ tab: Tab) -> ZenCurrentPage? {
+        guard !tab.isPrivate,
+              let url = tab.url,
+              ["http", "https"].contains(url.scheme?.lowercased() ?? "")
+        else { return nil }
+        return ZenCurrentPage(url: url, title: tab.displayTitle)
     }
 
     /// Like Zen, a pinned tab keeps its own browser tab: reselect the one it

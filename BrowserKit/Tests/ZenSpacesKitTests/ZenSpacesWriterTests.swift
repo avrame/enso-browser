@@ -143,6 +143,106 @@ final class ZenSpacesWriterTests: XCTestCase {
         XCTAssertTrue(server.puts.isEmpty)
     }
 
+    // MARK: Pinning
+
+    func testPinCreatesTheTabThenAppendsItToTheSpace() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server, makeTabID: { "1758000000000-abc" })
+
+        let pinned = try await writer.pinTab(url: try XCTUnwrap(URL(string: "https://example.com/a")),
+                                             title: "Example",
+                                             inSpace: "{a}")
+
+        XCTAssertEqual(server.puts.map(\.id), ["1758000000000-abc", "{a}"], "tab first, then the space")
+        XCTAssertEqual(server.puts.first?.ifUnmodifiedSince, "0.00", "the tab must not already exist")
+        XCTAssertEqual(server.puts.last?.ifUnmodifiedSince, "1700000000.00")
+
+        let tab = try decrypt(try XCTUnwrap(server.puts.first).payload)
+        XCTAssertEqual(tab["kind"], .string("tab"))
+        XCTAssertEqual(tab["data"]?["tabId"], .string("1758000000000-abc"))
+        XCTAssertEqual(tab["data"]?["url"], .string("https://example.com/a"))
+        XCTAssertEqual(tab["data"]?["title"], .string("Example"))
+        XCTAssertEqual(tab["data"]?["pinned"], .bool(true))
+        XCTAssertEqual(tab["data"]?["essential"], .bool(false))
+        XCTAssertEqual(tab["data"]?["workspaceUuid"], .string("{a}"))
+        XCTAssertEqual(tab["data"]?["folderId"], .null)
+        XCTAssertEqual(tab["data"]?["containerGuid"], .string("builtin-2"), "the space's container")
+        XCTAssertEqual(tab["data"]?["defaultContainer"], .bool(true))
+
+        let space = try decrypt(try XCTUnwrap(server.puts.last).payload)
+        XCTAssertEqual(space["data"]?["children"],
+                       .array([.string("t1"), .string("f1"), .string("1758000000000-abc")]))
+        XCTAssertEqual(space["data"]?["name"], .string("Old"), "nothing else changes")
+        XCTAssertEqual(space["data"]?["futureField"], .object(["x": .bool(true)]))
+
+        guard case .tab(let record) = pinned.tab.body else { return XCTFail("\(pinned.tab.body)") }
+        XCTAssertEqual(record.displayTitle, "Example")
+    }
+
+    func testPinKeepsAConcurrentReorderOfTheSpace() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let reordered = Self.space.replacingOccurrences(of: #""children":["t1","f1"]"#, with: #""children":["f1","t1"]"#)
+        server.concurrentEdits = [("{a}", reordered)]
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server, makeTabID: { "new" })
+
+        _ = try await writer.pinTab(url: try XCTUnwrap(URL(string: "https://example.com/")), title: "", inSpace: "{a}")
+
+        let space = try decrypt(try XCTUnwrap(server.puts.last).payload)
+        XCTAssertEqual(space["data"]?["children"], .array([.string("f1"), .string("t1"), .string("new")]))
+        XCTAssertEqual(server.puts.filter { $0.id == "new" }.count, 1, "the tab is written once")
+    }
+
+    func testPinWithoutAContainerLeavesItUnset() throws {
+        let data = try ZenSpacesWriter.newPinnedTab(id: "t",
+                                                    url: try XCTUnwrap(URL(string: "https://a/")),
+                                                    title: "A",
+                                                    spaceUUID: "{a}",
+                                                    containerGuid: nil)
+        let tab = try JSONDecoder().decode(JSONValue.self, from: data)
+        XCTAssertEqual(tab["data"]?["containerGuid"], .null)
+        XCTAssertEqual(tab["data"]?["defaultContainer"], .bool(false))
+    }
+
+    func testPinRefusesWithoutWriting() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+        struct Case {
+            let url: String
+            let space: String
+            let expected: ZenSpacesWriteError
+        }
+        let cases = [
+            Case(url: "about:blank", space: "{a}", expected: .unpinnableURL("about:blank")),
+            Case(url: "https://a/", space: "{gone}", expected: .recordNotFound("{gone}")),
+            Case(url: "https://a/", space: "f1", expected: .unexpectedRecord(id: "f1", reason: "not a space")),
+        ]
+        for test in cases {
+            do {
+                _ = try await writer.pinTab(url: try XCTUnwrap(URL(string: test.url)), title: "", inSpace: test.space)
+                XCTFail("expected \(test.expected)")
+            } catch {
+                XCTAssertEqual(error as? ZenSpacesWriteError, test.expected)
+            }
+        }
+        XCTAssertTrue(server.puts.isEmpty)
+
+        let newer = try makeServer(engineVersion: 4)
+        do {
+            _ = try await ZenSpacesWriter(auth: try auth(), transport: newer)
+                .pinTab(url: try XCTUnwrap(URL(string: "https://a/")), title: "", inSpace: "{a}")
+            XCTFail("expected refusal")
+        } catch {
+            XCTAssertEqual(error as? ZenSpacesWriteError, .unsupportedEngineVersion(4))
+        }
+        XCTAssertTrue(newer.puts.isEmpty)
+    }
+
+    func testGeneratedIDsFollowZensFormat() {
+        let id = ZenSpacesWriter.newTabSyncID()
+        XCTAssertNotNil(id.range(of: #"^\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"#,
+                                 options: .regularExpression), id)
+    }
+
     func testGivesUpAfterRepeatedConflicts() async throws {
         let server = try makeServer(engineVersion: 3)
         server.concurrentEdits = Array(repeating: ("{a}", Self.space), count: 3)

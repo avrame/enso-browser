@@ -38,7 +38,7 @@ final class SpacesStoreTests: XCTestCase {
                                        snapshot: SpacesSnapshot(records: fresh),
                                        engineVersion: 3,
                                        fetchedAt: Date())
-        let store = SpacesStore(cache: cache, fetch: { result }, rename: Self.noRename)
+        let store = SpacesStore(cache: cache, fetch: { result }, rename: Self.noRename, pin: Self.noPin)
         XCTAssertEqual(store.snapshot?.spaces.map(\.record.name), ["Cached"])
 
         await store.refresh()
@@ -50,7 +50,10 @@ final class SpacesStoreTests: XCTestCase {
     func testFailedRefreshKeepsPreviousSnapshot() async throws {
         let cache = SpacesCache(url: cacheURL)
         try cache.save(records(spaceName: "Cached"), fetchedAt: .distantPast)
-        let store = SpacesStore(cache: cache, fetch: { throw ZenSpacesError.engineNotOnServer }, rename: Self.noRename)
+        let store = SpacesStore(cache: cache,
+                                fetch: { throw ZenSpacesError.engineNotOnServer },
+                                rename: Self.noRename,
+                                pin: Self.noPin)
 
         await store.refresh()
         XCTAssertEqual(store.snapshot?.spaces.map(\.record.name), ["Cached"])
@@ -60,7 +63,10 @@ final class SpacesStoreTests: XCTestCase {
     func testResetClearsCache() throws {
         let cache = SpacesCache(url: cacheURL)
         try cache.save(records(spaceName: "Cached"), fetchedAt: .distantPast)
-        let store = SpacesStore(cache: cache, fetch: { throw ZenSpacesError.engineNotOnServer }, rename: Self.noRename)
+        let store = SpacesStore(cache: cache,
+                                fetch: { throw ZenSpacesError.engineNotOnServer },
+                                rename: Self.noRename,
+                                pin: Self.noPin)
 
         store.reset()
         XCTAssertNil(store.snapshot)
@@ -77,7 +83,8 @@ final class SpacesStoreTests: XCTestCase {
                                     XCTAssertEqual(target, .space("{a}"))
                                     XCTAssertEqual(name, "New")
                                     return renamed
-                                })
+                                },
+                                pin: Self.noPin)
 
         try await store.rename(.space("{a}"), to: "New")
         XCTAssertEqual(store.snapshot?.spaces.map(\.record.name), ["New"])
@@ -89,7 +96,8 @@ final class SpacesStoreTests: XCTestCase {
         try cache.save(records(spaceName: "Old"), fetchedAt: .distantPast)
         let store = SpacesStore(cache: cache,
                                 fetch: { throw ZenSpacesError.engineNotOnServer },
-                                rename: { _, _ in throw ZenSpacesWriteError.conflict("{a}") })
+                                rename: { _, _ in throw ZenSpacesWriteError.conflict("{a}") },
+                                pin: Self.noPin)
 
         do {
             try await store.rename(.space("{a}"), to: "New")
@@ -105,13 +113,53 @@ final class SpacesStoreTests: XCTestCase {
         let staleFetch = records(spaceName: "Old", modified: Date(timeIntervalSince1970: 10))
         let newerFetch = records(spaceName: "Zen", modified: Date(timeIntervalSince1970: 30))
 
-        let kept = SpacesStore.keepingNewer(local: local, fetched: staleFetch)
-        XCTAssertEqual(SpacesSnapshot(records: kept).spaces.map(\.record.name), ["Renamed"])
-        let replaced = SpacesStore.keepingNewer(local: local, fetched: newerFetch)
-        XCTAssertEqual(SpacesSnapshot(records: replaced).spaces.map(\.record.name), ["Zen"])
+        let kept = SpacesStore.merge(local: local, fetched: staleFetch, writtenLocally: ["{a}"])
+        XCTAssertEqual(SpacesSnapshot(records: kept.records).spaces.map(\.record.name), ["Renamed"])
+        XCTAssertEqual(kept.writtenLocally, ["{a}"])
+        let replaced = SpacesStore.merge(local: local, fetched: newerFetch, writtenLocally: ["{a}"])
+        XCTAssertEqual(SpacesSnapshot(records: replaced.records).spaces.map(\.record.name), ["Zen"])
+        XCTAssertEqual(replaced.writtenLocally, [], "caught up")
+        let notMine = SpacesStore.merge(local: local, fetched: staleFetch, writtenLocally: [])
+        let names = SpacesSnapshot(records: notMine.records).spaces.map(\.record.name)
+        XCTAssertEqual(names, ["Old"], "only records this store wrote are protected")
+    }
+
+    func testRefreshKeepsAJustCreatedRecordUntilTheServerHasIt() {
+        let created = SpacesRecord(id: "t9",
+                                   modified: Date(timeIntervalSince1970: 20),
+                                   cleartext: Data(#"{"id":"t9","kind":"tab","data":{"tabId":"t9","url":"https://a/"}}"#.utf8))
+        let local = records(spaceName: "Space") + [created]
+        let fetchedWithout = records(spaceName: "Space")
+        let merged = SpacesStore.merge(local: local, fetched: fetchedWithout, writtenLocally: ["t9"])
+        XCTAssertTrue(merged.records.contains { $0.id == "t9" })
+
+        let deletedElsewhere = SpacesStore.merge(local: local, fetched: fetchedWithout, writtenLocally: [])
+        XCTAssertFalse(deletedElsewhere.records.contains { $0.id == "t9" }, "not ours: the server's view wins")
+    }
+
+    func testPinAddsTheTabAndUpdatedSpace() async throws {
+        let cache = SpacesCache(url: cacheURL)
+        try cache.save(records(spaceName: "Space"), fetchedAt: .distantPast)
+        let tabJSON = #"{"id":"t9","kind":"tab","data":{"tabId":"t9","url":"https://a/","#
+            + #""title":"A","pinned":true,"workspaceUuid":"{a}"}}"#
+        let spaceJSON = #"{"id":"{a}","kind":"space","data":{"uuid":"{a}","name":"Space","children":["t9"]}}"#
+        let tab = SpacesRecord(id: "t9", modified: Date(timeIntervalSince1970: 20), cleartext: Data(tabJSON.utf8))
+        let space = SpacesRecord(id: "{a}", modified: Date(timeIntervalSince1970: 20), cleartext: Data(spaceJSON.utf8))
+        let store = SpacesStore(cache: cache,
+                                fetch: { throw ZenSpacesError.engineNotOnServer },
+                                rename: Self.noRename,
+                                pin: { _, _, _ in PinnedTab(tab: tab, space: space) })
+
+        let pinned = try await store.pin(url: try XCTUnwrap(URL(string: "https://a/")), title: "A", toSpace: "{a}")
+        XCTAssertEqual(pinned?.tabId, "t9")
+        guard case .tab(let item)? = store.snapshot?.spaces.first?.items.first else {
+            return XCTFail("the pinned tab should be listed in the space")
+        }
+        XCTAssertEqual(item.url, "https://a/")
     }
 
     private static let noRename: SpacesStore.Rename = { _, _ in throw ZenSpacesWriteError.invalidName }
+    private static let noPin: SpacesStore.Pin = { _, _, _ in throw ZenSpacesWriteError.invalidName }
 
     private func records(spaceName: String, modified: Date = .distantPast) -> [SpacesRecord] {
         let space = #"{"id":"{a}","kind":"space","data":{"uuid":"{a}","name":"\#(spaceName)","children":[]}}"#

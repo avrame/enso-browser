@@ -69,18 +69,24 @@ public final class SpacesStore: ObservableObject {
     @Published public private(set) var status: Status = .idle
 
     public typealias Rename = @MainActor (_ target: RenameTarget, _ name: String) async throws -> SpacesRecord
+    public typealias Pin = @MainActor (_ url: URL, _ title: String, _ spaceUUID: String) async throws -> PinnedTab
 
     private let cache: SpacesCache
     private let fetch: @MainActor () async throws -> SpacesFetchResult
     private let rename: Rename
+    private let pin: Pin
     private var records: [SpacesRecord] = []
+    /// Ids this store wrote, kept until a fetch has caught up with them.
+    private var writtenLocally: Set<String> = []
 
     public init(cache: SpacesCache,
                 fetch: @escaping @MainActor () async throws -> SpacesFetchResult,
-                rename: @escaping Rename) {
+                rename: @escaping Rename,
+                pin: @escaping Pin) {
         self.cache = cache
         self.fetch = fetch
         self.rename = rename
+        self.pin = pin
         if let cached = cache.load() {
             records = cached.records
             snapshot = SpacesSnapshot(records: cached.records)
@@ -94,7 +100,9 @@ public final class SpacesStore: ObservableObject {
         status = .refreshing
         do {
             let result = try await fetch()
-            records = Self.keepingNewer(local: records, fetched: result.records)
+            (records, writtenLocally) = Self.merge(local: records,
+                                                   fetched: result.records,
+                                                   writtenLocally: writtenLocally)
             snapshot = SpacesSnapshot(records: records)
             fetchedAt = result.fetchedAt
             status = .idle
@@ -111,16 +119,44 @@ public final class SpacesStore: ObservableObject {
         replace(updated)
     }
 
-    /// A fetch that started before a local write finished must not undo it.
-    static func keepingNewer(local: [SpacesRecord], fetched: [SpacesRecord]) -> [SpacesRecord] {
+    /// Pins on the server first; returns the new tab's Zen id.
+    @discardableResult
+    public func pin(url: URL, title: String, toSpace spaceUUID: String) async throws -> TabRecord? {
+        let pinned = try await pin(url, title, spaceUUID)
+        replace(pinned.tab)
+        replace(pinned.space)
+        if case .tab(let tab) = pinned.tab.body { return tab }
+        return nil
+    }
+
+    /// A fetch that started before a local write finished must not undo it:
+    /// a locally written record wins while it is newer than the fetched one,
+    /// or is missing from the fetch altogether (just created).
+    static func merge(local: [SpacesRecord],
+                      fetched: [SpacesRecord],
+                      writtenLocally: Set<String>) -> (records: [SpacesRecord], writtenLocally: Set<String>) {
         let localByID = Dictionary(local.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return fetched.map { record in
-            guard let mine = localByID[record.id], mine.modified > record.modified else { return record }
+        let fetchedIDs = Set(fetched.map(\.id))
+        var stillPending: Set<String> = []
+        var merged = fetched.map { record -> SpacesRecord in
+            guard writtenLocally.contains(record.id),
+                  let mine = localByID[record.id],
+                  mine.modified > record.modified
+            else { return record }
+            stillPending.insert(record.id)
             return mine
         }
+        for id in writtenLocally where !fetchedIDs.contains(id) {
+            if let mine = localByID[id] {
+                merged.append(mine)
+                stillPending.insert(id)
+            }
+        }
+        return (merged, stillPending)
     }
 
     private func replace(_ record: SpacesRecord) {
+        writtenLocally.insert(record.id)
         if let index = records.firstIndex(where: { $0.id == record.id }) {
             records[index] = record
         } else {
@@ -133,6 +169,7 @@ public final class SpacesStore: ObservableObject {
     /// Forgets everything, e.g. after the account signs out.
     public func reset() {
         records = []
+        writtenLocally = []
         cache.clear()
         snapshot = nil
         fetchedAt = nil

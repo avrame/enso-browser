@@ -5,6 +5,12 @@
 import SwiftUI
 import ZenSpacesKit
 
+/// The page in the selected browser tab, offered for pinning.
+struct ZenCurrentPage {
+    let url: URL
+    let title: String
+}
+
 /// A space or folder the user asked to rename, with the name to start from.
 private struct RenameRequest {
     let target: RenameTarget
@@ -22,7 +28,10 @@ private struct RenameRequest {
 /// swipes sideways, and a strip of space icons to jump between them.
 struct ZenSpacesSheet: View {
     @ObservedObject var store: SpacesStore
+    let currentPage: ZenCurrentPage?
     let onOpen: (TabRecord) -> Void
+    /// Called with the new pinned tab once the server has accepted it.
+    let onPinned: (TabRecord) -> Void
 
     @AppStorage("zenSpaces.selectedSpace") private var selectedSpace = ""
     @State private var renaming: RenameRequest?
@@ -54,7 +63,7 @@ struct ZenSpacesSheet: View {
         } message: { _ in
             Text("The new name also appears in Zen on your other devices.")
         }
-        .alert("Couldn't Rename", isPresented: isPresent($writeError), presenting: writeError) { _ in
+        .alert("Couldn't Save to Zen", isPresented: isPresent($writeError), presenting: writeError) { _ in
             Button("OK", role: .cancel) {}
         } message: { message in
             Text(message)
@@ -76,6 +85,21 @@ struct ZenSpacesSheet: View {
             defer { isSaving = false }
             do {
                 try await store.rename(target, to: name)
+            } catch {
+                writeError = Self.message(for: error)
+            }
+        }
+    }
+
+    private func pin(to space: SpaceRecord) {
+        guard let currentPage else { return }
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                if let tab = try await store.pin(url: currentPage.url, title: currentPage.title, toSpace: space.uuid) {
+                    onPinned(tab)
+                }
             } catch {
                 writeError = Self.message(for: error)
             }
@@ -128,7 +152,10 @@ struct ZenSpacesSheet: View {
                 ZenSpacePage(space: space,
                              allSpaces: snapshot.spaces,
                              selection: selection,
+                             currentPage: currentPage,
+                             isSaving: isSaving,
                              onRename: startRenaming,
+                             onPin: pin(to:),
                              onOpen: onOpen,
                              onRefresh: { await store.refresh() })
                     .tag(space.record.uuid)
@@ -255,39 +282,104 @@ private struct ZenSpacePage: View {
     let space: SpaceNode
     let allSpaces: [SpaceNode]
     @Binding var selection: String
+    let currentPage: ZenCurrentPage?
+    let isSaving: Bool
     let onRename: (RenameRequest) -> Void
+    let onPin: (SpaceRecord) -> Void
     let onOpen: (TabRecord) -> Void
     let onRefresh: () async -> Void
 
     var body: some View {
-        List {
-            Section {
-                if space.items.isEmpty {
-                    Text("No pinned tabs").foregroundStyle(.secondary)
-                }
-                ForEach(Array(space.items.enumerated()), id: \.offset) { _, item in
-                    ZenSidebarItemView(item: item, onOpen: onOpen, onRename: onRename)
-                }
-            } header: {
-                HStack(spacing: 8) {
-                    ZenSpaceIcon(space: space.record)
-                    spaceMenu
-                    if let container = space.container {
-                        Text(container.name)
-                            .font(.caption)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(.quaternary, in: Capsule())
+        VStack(spacing: 0) {
+            header
+            List {
+                Section {
+                    if space.items.isEmpty {
+                        Text("No pinned tabs").foregroundStyle(.secondary)
+                    }
+                    ForEach(Array(space.items.enumerated()), id: \.offset) { _, item in
+                        ZenSidebarItemView(item: item, onOpen: onOpen, onRename: onRename)
                     }
                 }
-                .textCase(nil)
+            }
+            .listStyle(.insetGrouped)
+            .contentMargins(.top, 4, for: .scrollContent)
+            .scrollContentBackground(.hidden)
+            .refreshable { await onRefresh() }
+        }
+        .background(ZenSpaceBackground(theme: space.record.parsedTheme))
+    }
+
+    /// Stays put while the space's tabs scroll underneath it.
+    private var header: some View {
+        HStack(spacing: 8) {
+            ZenSpaceIcon(space: space.record)
+            spaceMenu
                 .foregroundStyle(.primary)
+            if let container = space.container {
+                Text(container.name)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(.quaternary, in: Capsule())
+                    .fixedSize()
+            }
+            Spacer(minLength: 8)
+            if let currentPage {
+                pinButton(currentPage)
+                    .fixedSize()
             }
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
-        .background(ZenSpaceBackground(theme: space.record.parsedTheme))
-        .refreshable { await onRefresh() }
+        .padding(.horizontal, 36)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    /// At the top of every space, so pinning never needs a scroll.
+    @ViewBuilder
+    private func pinButton(_ page: ZenCurrentPage) -> some View {
+        if isPinnedHere(page.url) {
+            Label("Pinned", systemImage: "pin.fill")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .accessibilityLabel("Current page is pinned in \(space.record.name)")
+        } else {
+            Button {
+                onPin(space.record)
+            } label: {
+                Label("Pin", systemImage: "pin")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(.tint.opacity(0.15), in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tint)
+            .disabled(isSaving)
+            .accessibilityLabel("Pin current page")
+            .accessibilityHint("Pins \(page.title) to \(space.record.name) in Zen")
+        }
+    }
+
+    private func isPinnedHere(_ url: URL) -> Bool {
+        func tabs(in items: [SidebarItem]) -> [TabRecord] {
+            items.flatMap { item -> [TabRecord] in
+                switch item {
+                case .tab(let tab): return [tab]
+                case .split(let split): return split.tabs
+                case .folder(let folder): return tabs(in: folder.items)
+                case .missing: return []
+                }
+            }
+        }
+        return tabs(in: space.items).contains { tab in
+            URL(string: tab.url).map { PinnedURLMatching.isSamePage($0, url) } ?? false
+        }
     }
 
     /// Every space by name, for jumping when the strip holds too many to scan.
@@ -306,7 +398,10 @@ private struct ZenSpacePage: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Text(space.record.name).font(.headline).multilineTextAlignment(.leading)
+                Text(space.record.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 Image(systemName: "chevron.down")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)

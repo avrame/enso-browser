@@ -26,7 +26,8 @@ enum ZenSpacesService {
                                rename: demo.rename,
                                pin: demo.pin,
                                unpin: demo.unpin,
-                               move: demo.move)
+                               move: demo.move,
+                               moveTab: demo.moveTab)
         }
         #endif
         return SpacesStore(cache: SpacesCache(url: directory.appendingPathComponent("spaces.json")),
@@ -34,7 +35,8 @@ enum ZenSpacesService {
                            rename: rename,
                            pin: pin,
                            unpin: unpin,
-                           move: move)
+                           move: move,
+                           moveTab: moveTab)
     }
 
     private static func fetch() async throws -> SpacesFetchResult {
@@ -55,6 +57,10 @@ enum ZenSpacesService {
 
     private static func move(_ itemID: String, _ parent: ReorderParent, _ beforeID: String?) async throws -> SpacesRecord {
         try await ZenSpacesWriter(auth: auth()).move(itemID, in: parent, before: beforeID)
+    }
+
+    private static func moveTab(_ tabID: String, _ folderID: String?) async throws -> MovedTab {
+        try await ZenSpacesWriter(auth: auth()).moveTab(tabID, toFolder: folderID)
     }
 
     private static func auth() async throws -> SyncAuth {
@@ -128,6 +134,38 @@ private final class DemoSpaces {
             data["children"] = .array(ZenSpacesWriter.moving(itemID, before: beforeID, in: children))
         }
         let record = SpacesRecord(id: parent.id, modified: Date(), cleartext: changed)
+        records[index] = record
+        return record
+    }
+
+    func moveTab(_ tabID: String, _ folderID: String?) async throws -> MovedTab {
+        try await Task.sleep(for: .seconds(1))
+        guard let tabIndex = records.firstIndex(where: { $0.id == tabID }),
+              case .tab(let tab) = records[tabIndex].body,
+              let spaceID = tab.workspaceUuid
+        else { throw ZenSpacesWriteError.recordNotFound(tabID) }
+        let source = tab.folderId ?? spaceID
+        let destination = folderID ?? spaceID
+        let movedTab = try edit(tabID, kind: "tab") { $0["folderId"] = folderID.map(JSONValue.string) ?? .null }
+        let added = try edit(destination, kind: folderID == nil ? "space" : "folder") { data in
+            guard case .array(let children)? = data["children"] else { return }
+            data["children"] = .array(children + [.string(tabID)])
+        }
+        let removed = try edit(source, kind: tab.folderId == nil ? "space" : "folder") { data in
+            guard case .array(let children)? = data["children"] else { return }
+            data["children"] = .array(children.filter { $0 != .string(tabID) })
+        }
+        return MovedTab(tab: movedTab, destination: added, source: removed)
+    }
+
+    private func edit(_ id: String, kind: String, change: (inout [String: JSONValue]) -> Void) throws -> SpacesRecord {
+        guard let index = records.firstIndex(where: { $0.id == id }),
+              let raw = records[index].raw,
+              let cleartext = try? JSONEncoder().encode(raw)
+        else { throw ZenSpacesWriteError.recordNotFound(id) }
+        let record = SpacesRecord(id: id,
+                                  modified: Date(),
+                                  cleartext: try ZenSpacesWriter.changed(cleartext, id: id, kind: kind, change: change))
         records[index] = record
         return record
     }

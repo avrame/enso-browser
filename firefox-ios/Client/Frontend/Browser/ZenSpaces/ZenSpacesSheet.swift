@@ -39,6 +39,31 @@ extension SidebarItem {
     }
 }
 
+/// A folder a tab can be moved into, named with its parents ("A › B").
+private struct FolderChoice: Identifiable {
+    let id: String
+    let path: String
+
+    static func all(in items: [SidebarItem], prefix: String = "") -> [FolderChoice] {
+        items.flatMap { item -> [FolderChoice] in
+            guard case .folder(let folder) = item else { return [] }
+            let path = prefix + folder.record.name
+            return [FolderChoice(id: folder.record.folderId, path: path)] + all(in: folder.items, prefix: path + " › ")
+        }
+    }
+}
+
+/// What a row in a space can do, shared down the folder tree.
+private struct ZenItemActions {
+    let folders: [FolderChoice]
+    let open: (TabRecord) -> Void
+    let rename: (RenameRequest) -> Void
+    let unpin: (TabRecord) -> Void
+    let reorder: ZenMove
+    /// Into a folder, or out to the space's top level when nil.
+    let moveToFolder: (TabRecord, String?) -> Void
+}
+
 /// A space or folder the user asked to rename, with the name to start from.
 private struct RenameRequest {
     let target: RenameTarget
@@ -158,6 +183,18 @@ struct ZenSpacesSheet: View {
         }
     }
 
+    private func moveToFolder(_ tab: TabRecord, _ folderID: String?) {
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                try await store.moveTab(tab.tabId, toFolder: folderID)
+            } catch {
+                writeError = Self.message(for: error)
+            }
+        }
+    }
+
     private func unpin(_ tab: TabRecord) {
         isSaving = true
         Task {
@@ -222,6 +259,7 @@ struct ZenSpacesSheet: View {
                              onPin: pin(to:),
                              onUnpin: { unpinning = $0 },
                              onMove: move,
+                             onMoveToFolder: moveToFolder,
                              onOpen: onOpen,
                              onRefresh: { await store.refresh() })
                     .tag(space.record.uuid)
@@ -354,6 +392,7 @@ private struct ZenSpacePage: View {
     let onPin: (SpaceRecord) -> Void
     let onUnpin: (TabRecord) -> Void
     let onMove: ZenMove
+    let onMoveToFolder: (TabRecord, String?) -> Void
     let onOpen: (TabRecord) -> Void
     let onRefresh: () async -> Void
 
@@ -368,7 +407,7 @@ private struct ZenSpacePage: View {
                         Text("No pinned tabs").foregroundStyle(.secondary)
                     }
                     ForEach(space.items, id: \.itemID) { item in
-                        ZenSidebarItemView(item: item, onOpen: onOpen, onRename: onRename, onUnpin: onUnpin, onMove: onMove)
+                        ZenSidebarItemView(item: item, folderID: nil, actions: actions)
                     }
                     .onMove { source, destination in
                         if let move = SidebarItem.move(in: space.items, from: source, to: destination) {
@@ -384,6 +423,15 @@ private struct ZenSpacePage: View {
             .refreshable { await onRefresh() }
         }
         .background(ZenSpaceBackground(theme: space.record.parsedTheme))
+    }
+
+    private var actions: ZenItemActions {
+        ZenItemActions(folders: FolderChoice.all(in: space.items),
+                       open: onOpen,
+                       rename: onRename,
+                       unpin: onUnpin,
+                       reorder: onMove,
+                       moveToFolder: onMoveToFolder)
     }
 
     /// Stays put while the space's tabs scroll underneath it.
@@ -503,24 +551,17 @@ private struct ZenSpacePage: View {
 
 private struct ZenSidebarItemView: View {
     let item: SidebarItem
-    let onOpen: (TabRecord) -> Void
-    let onRename: (RenameRequest) -> Void
-    /// Offered on tabs directly in a space or folder; split members are not
-    /// listed there, so the writer would refuse them.
-    let onUnpin: (TabRecord) -> Void
-    let onMove: ZenMove
+    /// The folder this item sits in; nil at a space's top level.
+    let folderID: String?
+    let actions: ZenItemActions
 
     var body: some View {
         switch item {
         case .tab(let tab):
             // Long-press, not a swipe: a sideways swipe pages between spaces.
             tabRow(tab)
-                .contextMenu {
-                    Button(role: .destructive) { onUnpin(tab) } label: {
-                        Label("Unpin", systemImage: "pin.slash")
-                    }
-                }
-                .accessibilityAction(named: "Unpin") { onUnpin(tab) }
+                .contextMenu { tabMenu(tab) }
+                .accessibilityAction(named: "Unpin") { actions.unpin(tab) }
         case .split(let split):
             Label("Split view", systemImage: "rectangle.split.2x1")
                 .font(.caption)
@@ -529,25 +570,26 @@ private struct ZenSidebarItemView: View {
         case .folder(let folder):
             DisclosureGroup {
                 ForEach(folder.items, id: \.itemID) { child in
-                    ZenSidebarItemView(item: child, onOpen: onOpen, onRename: onRename, onUnpin: onUnpin, onMove: onMove)
+                    ZenSidebarItemView(item: child, folderID: folder.record.folderId, actions: actions)
                 }
                 .onMove { source, destination in
                     if let move = SidebarItem.move(in: folder.items, from: source, to: destination) {
-                        onMove(.folder(folder.record.folderId), move.item, move.before)
+                        actions.reorder(.folder(folder.record.folderId), move.item, move.before)
                     }
                 }
             } label: {
                 Label(folder.record.name, systemImage: folder.record.live == nil ? "folder" : "dot.radiowaves.up.forward")
                     .contextMenu {
                         Button {
-                            onRename(RenameRequest(target: .folder(folder.record.folderId),
-                                                   currentName: folder.record.name))
+                            actions.rename(RenameRequest(target: .folder(folder.record.folderId),
+                                                         currentName: folder.record.name))
                         } label: {
                             Label("Rename Folder…", systemImage: "pencil")
                         }
                     }
                     .accessibilityAction(named: "Rename Folder") {
-                        onRename(RenameRequest(target: .folder(folder.record.folderId), currentName: folder.record.name))
+                        actions.rename(RenameRequest(target: .folder(folder.record.folderId),
+                                                     currentName: folder.record.name))
                     }
             }
         case .missing:
@@ -555,8 +597,30 @@ private struct ZenSidebarItemView: View {
         }
     }
 
+    @ViewBuilder
+    private func tabMenu(_ tab: TabRecord) -> some View {
+        let destinations = actions.folders.filter { $0.id != folderID }
+        if !destinations.isEmpty {
+            Menu {
+                ForEach(destinations) { folder in
+                    Button(folder.path) { actions.moveToFolder(tab, folder.id) }
+                }
+            } label: {
+                Label("Move to Folder", systemImage: "folder")
+            }
+        }
+        if folderID != nil {
+            Button { actions.moveToFolder(tab, nil) } label: {
+                Label("Move Out of Folder", systemImage: "folder.badge.minus")
+            }
+        }
+        Button(role: .destructive) { actions.unpin(tab) } label: {
+            Label("Unpin", systemImage: "pin.slash")
+        }
+    }
+
     private func tabRow(_ tab: TabRecord) -> some View {
-        Button { onOpen(tab) } label: {
+        Button { actions.open(tab) } label: {
             HStack(spacing: 12) {
                 ZenSpacesFavicon(tab: tab, size: 20)
                 VStack(alignment: .leading, spacing: 1) {

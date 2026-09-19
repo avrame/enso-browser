@@ -43,7 +43,8 @@ final class SpacesStoreTests: XCTestCase {
                                 rename: Self.noRename,
                                 pin: Self.noPin,
                                 unpin: Self.noUnpin,
-                                move: Self.noMove)
+                                move: Self.noMove,
+                                moveTab: Self.noMoveTab)
         XCTAssertEqual(store.snapshot?.spaces.map(\.record.name), ["Cached"])
 
         await store.refresh()
@@ -60,7 +61,8 @@ final class SpacesStoreTests: XCTestCase {
                                 rename: Self.noRename,
                                 pin: Self.noPin,
                                 unpin: Self.noUnpin,
-                                move: Self.noMove)
+                                move: Self.noMove,
+                                moveTab: Self.noMoveTab)
 
         await store.refresh()
         XCTAssertEqual(store.snapshot?.spaces.map(\.record.name), ["Cached"])
@@ -75,7 +77,8 @@ final class SpacesStoreTests: XCTestCase {
                                 rename: Self.noRename,
                                 pin: Self.noPin,
                                 unpin: Self.noUnpin,
-                                move: Self.noMove)
+                                move: Self.noMove,
+                                moveTab: Self.noMoveTab)
 
         store.reset()
         XCTAssertNil(store.snapshot)
@@ -95,7 +98,8 @@ final class SpacesStoreTests: XCTestCase {
                                 },
                                 pin: Self.noPin,
                                 unpin: Self.noUnpin,
-                                move: Self.noMove)
+                                move: Self.noMove,
+                                moveTab: Self.noMoveTab)
 
         try await store.rename(.space("{a}"), to: "New")
         XCTAssertEqual(store.snapshot?.spaces.map(\.record.name), ["New"])
@@ -110,7 +114,8 @@ final class SpacesStoreTests: XCTestCase {
                                 rename: { _, _ in throw ZenSpacesWriteError.conflict("{a}") },
                                 pin: Self.noPin,
                                 unpin: Self.noUnpin,
-                                move: Self.noMove)
+                                move: Self.noMove,
+                                moveTab: Self.noMoveTab)
 
         do {
             try await store.rename(.space("{a}"), to: "New")
@@ -163,7 +168,8 @@ final class SpacesStoreTests: XCTestCase {
                                 rename: Self.noRename,
                                 pin: { _, _ in PinnedTab(tab: tab, space: space) },
                                 unpin: Self.noUnpin,
-                                move: Self.noMove)
+                                move: Self.noMove,
+                                moveTab: Self.noMoveTab)
 
         let page = PinnablePage(url: try XCTUnwrap(URL(string: "https://a/")), title: "A")
         let pinned = try await store.pin(page, toSpace: "{a}")
@@ -195,7 +201,8 @@ final class SpacesStoreTests: XCTestCase {
                                 rename: Self.noRename,
                                 pin: Self.noPin,
                                 unpin: { _ in UnpinnedTab(parent: parent, tombstone: tombstone) },
-                                move: Self.noMove)
+                                move: Self.noMove,
+                                moveTab: Self.noMoveTab)
         XCTAssertEqual(store.snapshot?.spaces.first?.items.count, 1)
 
         try await store.unpin(tabID: "t9")
@@ -241,7 +248,8 @@ final class SpacesStoreTests: XCTestCase {
                                 XCTAssertEqual(before, "t1")
                                 seenDuringWrite = store.map(self.order) ?? []
                                 return SpacesRecord(id: "{a}", modified: Date(), cleartext: Data(server.utf8))
-                            })
+                            },
+                            moveTab: Self.noMoveTab)
         let subject = try XCTUnwrap(store)
 
         try await subject.move("t3", in: .space("{a}"), before: "t1")
@@ -255,7 +263,8 @@ final class SpacesStoreTests: XCTestCase {
                                 rename: Self.noRename,
                                 pin: Self.noPin,
                                 unpin: Self.noUnpin,
-                                move: { _, _, _ in throw ZenSpacesWriteError.conflict("{a}") })
+                                move: { _, _, _ in throw ZenSpacesWriteError.conflict("{a}") },
+                                moveTab: Self.noMoveTab)
         do {
             try await store.move("t3", in: .space("{a}"), before: "t1")
             XCTFail("expected the error to surface")
@@ -277,7 +286,8 @@ final class SpacesStoreTests: XCTestCase {
                                     try await Task.sleep(for: .milliseconds(itemID == "t3" ? 50 : 1))
                                     sent.append("end \(itemID)")
                                     throw ZenSpacesWriteError.conflict(itemID)
-                                })
+                                },
+                                moveTab: Self.noMoveTab)
         async let first: Void? = try? store.move("t3", in: .space("{a}"), before: "t1")
         async let second: Void? = try? store.move("t2", in: .space("{a}"), before: nil)
         _ = await (first, second)
@@ -288,6 +298,7 @@ final class SpacesStoreTests: XCTestCase {
     private static let noPin: SpacesStore.Pin = { _, _ in throw ZenSpacesWriteError.invalidName }
     private static let noUnpin: SpacesStore.Unpin = { _ in throw ZenSpacesWriteError.invalidName }
     private static let noMove: SpacesStore.Move = { _, _, _ in throw ZenSpacesWriteError.invalidName }
+    private static let noMoveTab: SpacesStore.MoveTab = { _, _ in throw ZenSpacesWriteError.invalidName }
 
     private func records(spaceName: String, modified: Date = .distantPast) -> [SpacesRecord] {
         let space = #"{"id":"{a}","kind":"space","data":{"uuid":"{a}","name":"\#(spaceName)","children":[]}}"#

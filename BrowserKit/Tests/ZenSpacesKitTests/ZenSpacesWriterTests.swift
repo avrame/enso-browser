@@ -438,6 +438,98 @@ final class ZenSpacesWriterTests: XCTestCase {
         XCTAssertTrue(server.puts.isEmpty)
     }
 
+    // MARK: Moving between folders
+
+    /// Space {a} lists t1 and f1; folder f1 lists t2 and a split.
+    private func folderServer() throws -> FakeSyncServer {
+        let server = try makeServer(engineVersion: 3)
+        let bundle = try XCTUnwrap(collection)
+        let folder = Self.liveFolder.replacingOccurrences(of: #""children":["t1","sp1"]"#,
+                                                          with: #""children":["t2","sp1"]"#)
+        server.items["f1"] = try server.bso("f1", folder, bundle)
+        server.items["t1"] = try server.bso("t1", Self.pinnedTab, bundle)
+        server.items["t2"] = try server.bso("t2", Self.folderTab, bundle)
+        let elsewhere = #"{"id":"f9","kind":"folder","data":{"folderId":"f9","name":"Other","workspaceUuid":"{b}","#
+            + #""children":[]}}"#
+        server.items["f9"] = try server.bso("f9", elsewhere, bundle)
+        return server
+    }
+
+    func testMoveIntoAFolderChangesTheTabThenBothLists() async throws {
+        let server = try folderServer()
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+
+        let moved = try await writer.moveTab("t1", toFolder: "f1")
+
+        XCTAssertEqual(server.puts.map(\.id), ["t1", "f1", "{a}"], "tab, then destination, then source")
+        let tab = try decrypt(try XCTUnwrap(server.puts.first { $0.id == "t1" }).payload)
+        XCTAssertEqual(tab["data"]?["folderId"], .string("f1"))
+        XCTAssertEqual(tab["data"]?["url"], .string("https://a/"), "nothing else on the tab changes")
+        let folder = try decrypt(try XCTUnwrap(server.puts.first { $0.id == "f1" }).payload)
+        XCTAssertEqual(folder["data"]?["children"], .array([.string("t2"), .string("sp1"), .string("t1")]))
+        XCTAssertEqual(folder["data"]?["live"]?["type"], .string("rss"))
+        let space = try decrypt(try XCTUnwrap(server.puts.first { $0.id == "{a}" }).payload)
+        XCTAssertEqual(space["data"]?["children"], .array([.string("f1")]))
+        XCTAssertEqual(moved.records.map(\.id), ["t1", "f1", "{a}"])
+    }
+
+    func testMoveOutOfAFolderGoesLastInTheSpace() async throws {
+        let server = try folderServer()
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+
+        _ = try await writer.moveTab("t2", toFolder: nil)
+
+        XCTAssertEqual(server.puts.map(\.id), ["t2", "{a}", "f1"])
+        let tab = try decrypt(try XCTUnwrap(server.puts.first { $0.id == "t2" }).payload)
+        XCTAssertEqual(tab["data"]?["folderId"], .null)
+        let space = try decrypt(try XCTUnwrap(server.puts.first { $0.id == "{a}" }).payload)
+        XCTAssertEqual(space["data"]?["children"], .array([.string("t1"), .string("f1"), .string("t2")]))
+        let folder = try decrypt(try XCTUnwrap(server.puts.first { $0.id == "f1" }).payload)
+        XCTAssertEqual(folder["data"]?["children"], .array([.string("sp1")]))
+    }
+
+    func testMovingToWhereItAlreadyIsWritesNothing() async throws {
+        let server = try folderServer()
+        let moved = try await ZenSpacesWriter(auth: try auth(), transport: server).moveTab("t2", toFolder: "f1")
+        XCTAssertTrue(server.puts.isEmpty)
+        XCTAssertNil(moved.destination)
+    }
+
+    func testMoveTabRefusesWithoutWriting() async throws {
+        let server = try folderServer()
+        let bundle = try XCTUnwrap(collection)
+        let essential = Self.pinnedTab.replacingOccurrences(of: "\"t1\"", with: "\"e1\"")
+            .replacingOccurrences(of: #""essential":false"#, with: #""essential":true"#)
+        server.items["e1"] = try server.bso("e1", essential, bundle)
+        let splitMember = Self.pinnedTab.replacingOccurrences(of: "\"t1\"", with: "\"t5\"")
+        server.items["t5"] = try server.bso("t5", splitMember, bundle)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+
+        struct Case {
+            let tab: String
+            let folder: String?
+            let expected: ZenSpacesWriteError
+        }
+        let cases = [
+            Case(tab: "t1", folder: "f9", expected: .unexpectedRecord(id: "f9", reason: "in another space")),
+            Case(tab: "t1", folder: "t2", expected: .unexpectedRecord(id: "t2", reason: "not a folder")),
+            Case(tab: "t1", folder: "nowhere", expected: .recordNotFound("nowhere")),
+            Case(tab: "e1", folder: "f1", expected: .unexpectedRecord(id: "e1", reason: "an Essential")),
+            Case(tab: "t5",
+                 folder: "f1",
+                 expected: .unexpectedRecord(id: "t5", reason: "not listed in its space; it may be in a split view")),
+        ]
+        for test in cases {
+            do {
+                _ = try await writer.moveTab(test.tab, toFolder: test.folder)
+                XCTFail("expected \(test.expected)")
+            } catch {
+                XCTAssertEqual(error as? ZenSpacesWriteError, test.expected)
+            }
+        }
+        XCTAssertTrue(server.puts.isEmpty)
+    }
+
     func testGivesUpAfterRepeatedConflicts() async throws {
         let server = try makeServer(engineVersion: 3)
         server.concurrentEdits = Array(repeating: ("{a}", Self.space), count: 3)

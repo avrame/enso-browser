@@ -65,6 +65,21 @@ public struct UnpinnedTab: Sendable {
     }
 }
 
+/// The records a folder move wrote. Nil when that step was not needed.
+public struct MovedTab: Sendable {
+    public let tab: SpacesRecord
+    public let destination: SpacesRecord?
+    public let source: SpacesRecord?
+
+    public init(tab: SpacesRecord, destination: SpacesRecord?, source: SpacesRecord?) {
+        self.tab = tab
+        self.destination = destination
+        self.source = source
+    }
+
+    public var records: [SpacesRecord] { [tab] + [destination, source].compactMap { $0 } }
+}
+
 public enum ZenSpacesWriteError: Error, Equatable, CustomStringConvertible {
     /// Writes are only safe against the exact format this client knows.
     case unsupportedEngineVersion(Int?)
@@ -320,6 +335,84 @@ public struct ZenSpacesWriter: Sendable {
             result.append(item)
         }
         return result
+    }
+
+    /// Moves a pinned tab into a folder of its own space, or out to the
+    /// space's top level when `folderID` is nil; it goes last there.
+    ///
+    /// Zen places a tab by its `folderId` (ZenSpacesSyncApplier
+    /// #applyFolderMembership); `children` only orders. So the tab changes
+    /// first, then the destination lists it, then the source stops listing
+    /// it. A later step failing leaves the tab moved and its lists stale,
+    /// which Zen's next upload rewrites from the actual tabs.
+    public func moveTab(_ tabID: String, toFolder folderID: String?) async throws -> MovedTab {
+        try await checkEngineVersion()
+
+        let tab = try await pinnedTab(tabID)
+        guard let spaceID = tab.spaceID else {
+            throw ZenSpacesWriteError.unexpectedRecord(id: tabID, reason: "not in a space")
+        }
+        let source: ReorderParent = tab.folderID.map(ReorderParent.folder) ?? .space(spaceID)
+        let destination: ReorderParent = folderID.map(ReorderParent.folder) ?? .space(spaceID)
+        guard try await children(of: source).contains(.string(tabID)) else {
+            let reason = "not listed in its \(source.kind); it may be in a split view"
+            throw ZenSpacesWriteError.unexpectedRecord(id: tabID, reason: reason)
+        }
+        if source == destination {
+            let current = try await client.record(id: tabID, in: ZenSpacesReader.collection)
+            return MovedTab(tab: SpacesRecord(id: tabID,
+                                              modified: Date(timeIntervalSince1970: current.bso.modified),
+                                              cleartext: current.cleartext),
+                            destination: nil,
+                            source: nil)
+        }
+        if let folderID {
+            let folder = try await rawRecord(folderID)
+            guard folder["kind"]?.stringValue == "folder" else {
+                throw ZenSpacesWriteError.unexpectedRecord(id: folderID, reason: "not a folder")
+            }
+            guard folder["data"]?["workspaceUuid"]?.stringValue == spaceID else {
+                throw ZenSpacesWriteError.unexpectedRecord(id: folderID, reason: "in another space")
+            }
+        }
+
+        let movedTab = try await updateRecord(id: tabID, kind: "tab") { data in
+            data["folderId"] = folderID.map(JSONValue.string) ?? .null
+        }
+        let updatedDestination = try await updateRecord(id: destination.id, kind: destination.kind) { data in
+            let children = Self.childList(data)
+            if !children.contains(.string(tabID)) {
+                data["children"] = .array(children + [.string(tabID)])
+            }
+        }
+        let updatedSource = try await updateRecord(id: source.id, kind: source.kind) { data in
+            data["children"] = .array(Self.childList(data).filter { $0 != .string(tabID) })
+        }
+        return MovedTab(tab: movedTab, destination: updatedDestination, source: updatedSource)
+    }
+
+    private static func childList(_ data: [String: JSONValue]) -> [JSONValue] {
+        guard case .array(let children)? = data["children"] else { return [] }
+        return children
+    }
+
+    private func rawRecord(_ id: String) async throws -> JSONValue {
+        do {
+            let record = try await client.record(id: id, in: ZenSpacesReader.collection)
+            let raw = try JSONDecoder().decode(JSONValue.self, from: record.cleartext)
+            guard raw["deleted"]?.boolValue != true else { throw ZenSpacesWriteError.recordNotFound(id) }
+            return raw
+        } catch SyncStorageError.notFound {
+            throw ZenSpacesWriteError.recordNotFound(id)
+        }
+    }
+
+    private func children(of parent: ReorderParent) async throws -> [JSONValue] {
+        let raw = try await rawRecord(parent.id)
+        guard raw["kind"]?.stringValue == parent.kind, case .object(let data)? = raw["data"] else {
+            throw ZenSpacesWriteError.unexpectedRecord(id: parent.id, reason: "not a \(parent.kind)")
+        }
+        return Self.childList(data)
     }
 
     /// Spaces and folders both keep their name in `data.name`.

@@ -192,6 +192,21 @@ final class ZenSpacesWriterTests: XCTestCase {
         XCTAssertEqual(server.puts.filter { $0.id == "new" }.count, 1, "the tab is written once")
     }
 
+    func testPinCarriesADataURLIconButDropsRemoteOnes() throws {
+        let url = try XCTUnwrap(URL(string: "https://a/"))
+        func icon(_ icon: String) throws -> JSONValue? {
+            let data = try ZenSpacesWriter.newPinnedTab(id: "t",
+                                                        url: url,
+                                                        title: "A",
+                                                        icon: icon,
+                                                        spaceUUID: "{a}",
+                                                        containerGuid: nil)
+            return try JSONDecoder().decode(JSONValue.self, from: data)["data"]?["icon"]
+        }
+        XCTAssertEqual(try icon("data:image/png;base64,AAAA"), .string("data:image/png;base64,AAAA"))
+        XCTAssertEqual(try icon("https://a/favicon.ico"), .string(""))
+    }
+
     func testPinWithoutAContainerLeavesItUnset() throws {
         let data = try ZenSpacesWriter.newPinnedTab(id: "t",
                                                     url: try XCTUnwrap(URL(string: "https://a/")),

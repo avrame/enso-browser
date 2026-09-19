@@ -41,8 +41,8 @@ enum ZenSpacesService {
         try await ZenSpacesWriter(auth: auth()).rename(target, to: name)
     }
 
-    private static func pin(_ url: URL, _ title: String, _ spaceUUID: String) async throws -> PinnedTab {
-        try await ZenSpacesWriter(auth: auth()).pinTab(url: url, title: title, inSpace: spaceUUID)
+    private static func pin(_ page: PinnablePage, _ spaceUUID: String) async throws -> PinnedTab {
+        try await ZenSpacesWriter(auth: auth()).pinTab(url: page.url, title: page.title, icon: page.icon, inSpace: spaceUUID)
     }
 
     private static func auth() async throws -> SyncAuth {
@@ -81,7 +81,7 @@ private final class DemoSpaces {
         return record
     }
 
-    func pin(_ url: URL, _ title: String, _ spaceUUID: String) async throws -> PinnedTab {
+    func pin(_ page: PinnablePage, _ spaceUUID: String) async throws -> PinnedTab {
         try await Task.sleep(for: .seconds(1))
         guard let index = records.firstIndex(where: { $0.id == spaceUUID }),
               let raw = records[index].raw,
@@ -89,8 +89,9 @@ private final class DemoSpaces {
         else { throw ZenSpacesWriteError.recordNotFound(spaceUUID) }
         let tabID = ZenSpacesWriter.newTabSyncID()
         let tabCleartext = try ZenSpacesWriter.newPinnedTab(id: tabID,
-                                                            url: url,
-                                                            title: title,
+                                                            url: page.url,
+                                                            title: page.title,
+                                                            icon: page.icon,
                                                             spaceUUID: spaceUUID,
                                                             containerGuid: raw["data"]?["containerGuid"]?.stringValue)
         let changedSpace = try ZenSpacesWriter.changed(spaceCleartext, id: spaceUUID, kind: "space") { data in

@@ -9,6 +9,8 @@ import ZenSpacesKit
 struct ZenCurrentPage {
     let url: URL
     let title: String
+    /// The icon the page declared, if Firefox saw one.
+    let faviconURL: URL?
 }
 
 /// A space or folder the user asked to rename, with the name to start from.
@@ -97,7 +99,10 @@ struct ZenSpacesSheet: View {
         Task {
             defer { isSaving = false }
             do {
-                if let tab = try await store.pin(url: currentPage.url, title: currentPage.title, toSpace: space.uuid) {
+                let icon = await ZenFaviconDownloader.dataURL(pageURL: currentPage.url,
+                                                              declaredIcon: currentPage.faviconURL)
+                let page = PinnablePage(url: currentPage.url, title: currentPage.title, icon: icon)
+                if let tab = try await store.pin(page, toSpace: space.uuid) {
                     onPinned(tab)
                 }
             } catch {

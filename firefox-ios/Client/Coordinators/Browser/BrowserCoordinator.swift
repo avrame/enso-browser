@@ -610,7 +610,9 @@ final class BrowserCoordinator: BaseCoordinator,
               let url = tab.url,
               ["http", "https"].contains(url.scheme?.lowercased() ?? "")
         else { return nil }
-        return ZenCurrentPage(url: url, title: tab.displayTitle)
+        return ZenCurrentPage(url: url,
+                              title: tab.displayTitle,
+                              faviconURL: tab.faviconURL.flatMap { URL(string: $0, relativeTo: url)?.absoluteURL })
     }
 
     /// Like Zen, a pinned tab keeps its own browser tab: reselect the one it

@@ -54,6 +54,20 @@ public struct SpacesCache: Sendable {
     }
 }
 
+/// A page to pin: where it is, what it is called, and its favicon as a
+/// `data:` URL if one could be made.
+public struct PinnablePage: Sendable, Equatable {
+    public let url: URL
+    public let title: String
+    public let icon: String?
+
+    public init(url: URL, title: String, icon: String? = nil) {
+        self.url = url
+        self.title = title
+        self.icon = icon
+    }
+}
+
 /// Holds the current spaces snapshot for the UI: cached first, then
 /// refreshed from Sync on demand.
 @MainActor
@@ -69,7 +83,7 @@ public final class SpacesStore: ObservableObject {
     @Published public private(set) var status: Status = .idle
 
     public typealias Rename = @MainActor (_ target: RenameTarget, _ name: String) async throws -> SpacesRecord
-    public typealias Pin = @MainActor (_ url: URL, _ title: String, _ spaceUUID: String) async throws -> PinnedTab
+    public typealias Pin = @MainActor (_ page: PinnablePage, _ spaceUUID: String) async throws -> PinnedTab
 
     private let cache: SpacesCache
     private let fetch: @MainActor () async throws -> SpacesFetchResult
@@ -121,8 +135,8 @@ public final class SpacesStore: ObservableObject {
 
     /// Pins on the server first; returns the new tab's Zen id.
     @discardableResult
-    public func pin(url: URL, title: String, toSpace spaceUUID: String) async throws -> TabRecord? {
-        let pinned = try await pin(url, title, spaceUUID)
+    public func pin(_ page: PinnablePage, toSpace spaceUUID: String) async throws -> TabRecord? {
+        let pinned = try await pin(page, spaceUUID)
         replace(pinned.tab)
         replace(pinned.space)
         if case .tab(let tab) = pinned.tab.body { return tab }

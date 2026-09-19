@@ -148,9 +148,10 @@ final class SpacesStoreTests: XCTestCase {
         let store = SpacesStore(cache: cache,
                                 fetch: { throw ZenSpacesError.engineNotOnServer },
                                 rename: Self.noRename,
-                                pin: { _, _, _ in PinnedTab(tab: tab, space: space) })
+                                pin: { _, _ in PinnedTab(tab: tab, space: space) })
 
-        let pinned = try await store.pin(url: try XCTUnwrap(URL(string: "https://a/")), title: "A", toSpace: "{a}")
+        let page = PinnablePage(url: try XCTUnwrap(URL(string: "https://a/")), title: "A")
+        let pinned = try await store.pin(page, toSpace: "{a}")
         XCTAssertEqual(pinned?.tabId, "t9")
         guard case .tab(let item)? = store.snapshot?.spaces.first?.items.first else {
             return XCTFail("the pinned tab should be listed in the space")
@@ -159,7 +160,7 @@ final class SpacesStoreTests: XCTestCase {
     }
 
     private static let noRename: SpacesStore.Rename = { _, _ in throw ZenSpacesWriteError.invalidName }
-    private static let noPin: SpacesStore.Pin = { _, _, _ in throw ZenSpacesWriteError.invalidName }
+    private static let noPin: SpacesStore.Pin = { _, _ in throw ZenSpacesWriteError.invalidName }
 
     private func records(spaceName: String, modified: Date = .distantPast) -> [SpacesRecord] {
         let space = #"{"id":"{a}","kind":"space","data":{"uuid":"{a}","name":"\#(spaceName)","children":[]}}"#

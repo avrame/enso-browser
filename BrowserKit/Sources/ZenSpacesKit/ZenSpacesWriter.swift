@@ -90,7 +90,8 @@ public struct ZenSpacesWriter: Sendable {
     /// second write fails, Zen still places the tab by its `workspaceUuid`
     /// and repairs the order on its next upload, whereas the reverse order
     /// could leave the space naming a tab that does not exist.
-    public func pinTab(url: URL, title: String, inSpace spaceUUID: String) async throws -> PinnedTab {
+    /// `icon` is kept only as a `data:` URL, the only form Zen accepts.
+    public func pinTab(url: URL, title: String, icon: String? = nil, inSpace spaceUUID: String) async throws -> PinnedTab {
         guard ["http", "https"].contains(url.scheme?.lowercased() ?? "") else {
             throw ZenSpacesWriteError.unpinnableURL(url.absoluteString)
         }
@@ -112,6 +113,7 @@ public struct ZenSpacesWriter: Sendable {
         let tabCleartext = try Self.newPinnedTab(id: tabID,
                                                  url: url,
                                                  title: title,
+                                                 icon: icon,
                                                  spaceUUID: spaceUUID,
                                                  containerGuid: containerGuid)
         let tabModified: Double
@@ -143,6 +145,7 @@ public struct ZenSpacesWriter: Sendable {
     public static func newPinnedTab(id: String,
                                     url: URL,
                                     title: String,
+                                    icon: String? = nil,
                                     spaceUUID: String,
                                     containerGuid: String?) throws -> Data {
         let container: JSONValue = containerGuid.map(JSONValue.string) ?? .null
@@ -150,7 +153,7 @@ public struct ZenSpacesWriter: Sendable {
             "tabId": .string(id),
             "url": .string(url.absoluteString),
             "title": .string(title),
-            "icon": .string(""),
+            "icon": .string(icon.flatMap { $0.hasPrefix("data:") ? $0 : nil } ?? ""),
             "containerGuid": container,
             "essential": .bool(false),
             "pinned": .bool(true),

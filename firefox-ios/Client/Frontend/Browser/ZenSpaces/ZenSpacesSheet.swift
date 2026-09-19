@@ -417,6 +417,7 @@ private struct ZenSpacePage: View {
     let onRefresh: () async -> Void
 
     @State private var editMode: EditMode = .inactive
+    @Environment(\.colorScheme) private var systemScheme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -437,12 +438,14 @@ private struct ZenSpacePage: View {
                 }
             }
             .environment(\.editMode, $editMode)
+            .environment(\.zenRowBackground, space.record.parsedTheme == nil ? nil : Color.primary.opacity(0.08))
             .listStyle(.insetGrouped)
             .contentMargins(.top, 4, for: .scrollContent)
             .scrollContentBackground(.hidden)
             .refreshable { await onRefresh() }
         }
-        .background(ZenSpaceBackground(theme: space.record.parsedTheme))
+        .zenColorScheme(for: space.record.parsedTheme, system: systemScheme)
+        .background(ZenSpaceBackground(theme: space.record.parsedTheme, dark: systemScheme == .dark))
     }
 
     private var actions: ZenItemActions {
@@ -580,7 +583,14 @@ private struct ZenSidebarItemView: View {
     let folderID: String?
     let actions: ZenItemActions
 
+    @Environment(\.zenRowBackground) private var rowBackground
+
     var body: some View {
+        content.listRowBackground(rowBackground)
+    }
+
+    @ViewBuilder
+    private var content: some View {
         switch item {
         case .tab(let tab):
             // Long-press, not a swipe: a sideways swipe pages between spaces.
@@ -718,4 +728,10 @@ struct ZenSpacesFavicon: View {
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: size / 4))
         }
     }
+}
+
+extension EnvironmentValues {
+    /// A translucent row fill on a themed space, so the gradient shows through
+    /// as it does behind Zen's sidebar; nil keeps the list's own cards.
+    @Entry var zenRowBackground: Color?
 }

@@ -18,18 +18,42 @@ public struct SpaceTheme: Sendable, Equatable {
             self.green = green
             self.blue = blue
         }
+
+        /// `self` weighted by `amount` (0...1) over `other`, as Zen's blendColors.
+        public func mixed(with other: RGB, amount: Double) -> RGB {
+            RGB(red: red * amount + other.red * (1 - amount),
+                green: green * amount + other.green * (1 - amount),
+                blue: blue * amount + other.blue * (1 - amount))
+        }
     }
 
-    /// In the order Zen lists them; the primary color first.
-    public let colors: [RGB]
-    /// How strongly Zen paints the gradient, 0...1.
+    public struct Color: Sendable, Equatable {
+        public let rgb: RGB
+        /// Typed in by the user; Zen draws these unblended.
+        public let isCustom: Bool
+        public let isPrimary: Bool
+
+        public init(rgb: RGB, isCustom: Bool = false, isPrimary: Bool = false) {
+            self.rgb = rgb
+            self.isCustom = isCustom
+            self.isPrimary = isPrimary
+        }
+    }
+
+    /// In the order Zen stores and draws them.
+    public let colors: [Color]
+    /// How strongly Zen paints the colors, 0...1.
     public let opacity: Double
     /// Zen's grain overlay strength, 0...1.
     public let texture: Double
 
-    public var primary: RGB? { colors.first }
+    /// Zen's getPrimaryColor: the one marked primary, else the middle one.
+    public var primary: RGB? {
+        guard !colors.isEmpty else { return nil }
+        return (colors.first { $0.isPrimary } ?? colors[colors.count / 2]).rgb
+    }
 
-    public init(colors: [RGB], opacity: Double, texture: Double) {
+    public init(colors: [Color], opacity: Double, texture: Double) {
         self.colors = colors
         self.opacity = opacity
         self.texture = texture
@@ -41,17 +65,12 @@ public struct SpaceTheme: Sendable, Equatable {
               case .array(let entries)? = raw["gradientColors"]
         else { return nil }
 
-        var primary: [RGB] = []
-        var others: [RGB] = []
-        for entry in entries {
-            guard let color = Self.color(entry["c"]) else { continue }
-            if entry["isPrimary"]?.boolValue == true {
-                primary.append(color)
-            } else {
-                others.append(color)
-            }
+        let colors = entries.compactMap { entry -> Color? in
+            guard let rgb = Self.color(entry["c"]) else { return nil }
+            return Color(rgb: rgb,
+                         isCustom: entry["isCustom"]?.boolValue == true,
+                         isPrimary: entry["isPrimary"]?.boolValue == true)
         }
-        let colors = primary + others
         guard !colors.isEmpty else { return nil }
         self.init(colors: colors,
                   opacity: Self.unit(raw["opacity"], default: 0.5),

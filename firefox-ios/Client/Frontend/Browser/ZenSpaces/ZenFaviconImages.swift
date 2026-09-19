@@ -87,8 +87,8 @@ enum ZenFaviconImages {
         }
         guard coverage > 0 else { return .mixed }
         let average = luminance / coverage
-        if average > 0.85 { return .light }
-        if average < 0.15 { return .dark }
+        if average > 0.8 { return .light }
+        if average < 0.2 { return .dark }
         return .mixed
     }
 }

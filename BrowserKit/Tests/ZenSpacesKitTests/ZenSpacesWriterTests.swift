@@ -530,6 +530,40 @@ final class ZenSpacesWriterTests: XCTestCase {
         XCTAssertTrue(server.puts.isEmpty)
     }
 
+    // MARK: Space icons
+
+    func testSetsEmojiZenIconAndNone() async throws {
+        let cases: [(SpaceIcon, JSONValue)] = [
+            (.emoji("🧑‍🦰"), .string("🧑‍🦰")),
+            (.zen("layers"), .string("chrome://browser/skin/zen-icons/selectable/layers.svg")),
+            (.none, .null),
+        ]
+        for (icon, expected) in cases {
+            let server = try makeServer(engineVersion: 3)
+            let record = try await ZenSpacesWriter(auth: try auth(), transport: server).setSpaceIcon("{a}", to: icon)
+            let space = try decrypt(try XCTUnwrap(server.puts.first).payload)
+            XCTAssertEqual(space["data"]?["icon"], expected)
+            XCTAssertEqual(space["data"]?["name"], .string("Old"), "only the icon changes")
+            XCTAssertEqual(space["data"]?["theme"]?["opacity"], .number(0.5))
+            guard case .space(let updated) = record.body else { return XCTFail("\(record.body)") }
+            XCTAssertEqual(updated.spaceIcon, icon)
+        }
+    }
+
+    func testRefusesIconsZenCouldNotShow() async throws {
+        let server = try makeServer(engineVersion: 3)
+        let writer = ZenSpacesWriter(auth: try auth(), transport: server)
+        for icon in [SpaceIcon.emoji("ab"), .emoji("😀😀"), .emoji("A"), .emoji(""), .zen("not-an-icon")] {
+            do {
+                _ = try await writer.setSpaceIcon("{a}", to: icon)
+                XCTFail("expected refusal of \(icon)")
+            } catch {
+                XCTAssertEqual(error as? ZenSpacesWriteError, .invalidIcon)
+            }
+        }
+        XCTAssertTrue(server.puts.isEmpty)
+    }
+
     func testGivesUpAfterRepeatedConflicts() async throws {
         let server = try makeServer(engineVersion: 3)
         server.concurrentEdits = Array(repeating: ("{a}", Self.space), count: 3)

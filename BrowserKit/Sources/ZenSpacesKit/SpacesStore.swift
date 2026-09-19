@@ -85,6 +85,7 @@ public final class SpacesStore: ObservableObject {
     public typealias Rename = @MainActor (_ target: RenameTarget, _ name: String) async throws -> SpacesRecord
     public typealias Pin = @MainActor (_ page: PinnablePage, _ spaceUUID: String) async throws -> PinnedTab
     public typealias Unpin = @MainActor (_ tabID: String) async throws -> UnpinnedTab
+    public typealias SetIcon = @MainActor (_ spaceUUID: String, _ icon: SpaceIcon) async throws -> SpacesRecord
     public typealias MoveTab = @MainActor (_ tabID: String, _ folderID: String?) async throws -> MovedTab
     public typealias Move = @MainActor (_ itemID: String, _ parent: ReorderParent, _ beforeID: String?)
         async throws -> SpacesRecord
@@ -96,6 +97,7 @@ public final class SpacesStore: ObservableObject {
     private let unpin: Unpin
     private let move: Move
     private let moveTab: MoveTab
+    private let setIcon: SetIcon
     /// Moves are sent one at a time, in the order they were made.
     private var lastMove: Task<Void, Never>?
     private var records: [SpacesRecord] = []
@@ -108,7 +110,8 @@ public final class SpacesStore: ObservableObject {
                 pin: @escaping Pin,
                 unpin: @escaping Unpin,
                 move: @escaping Move,
-                moveTab: @escaping MoveTab) {
+                moveTab: @escaping MoveTab,
+                setIcon: @escaping SetIcon) {
         self.cache = cache
         self.fetch = fetch
         self.rename = rename
@@ -116,6 +119,7 @@ public final class SpacesStore: ObservableObject {
         self.unpin = unpin
         self.move = move
         self.moveTab = moveTab
+        self.setIcon = setIcon
         if let cached = cache.load() {
             records = cached.records
             snapshot = SpacesSnapshot(records: cached.records)
@@ -163,6 +167,11 @@ public final class SpacesStore: ObservableObject {
         let unpinned = try await unpin(tabID)
         replace(unpinned.parent)
         replace(unpinned.tombstone)
+    }
+
+    /// Shown once the server has accepted it.
+    public func setIcon(_ icon: SpaceIcon, forSpace uuid: String) async throws {
+        replace(try await setIcon(uuid, icon))
     }
 
     /// Into a folder of the tab's space, or out to its top level when

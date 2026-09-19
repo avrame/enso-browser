@@ -27,7 +27,8 @@ enum ZenSpacesService {
                                pin: demo.pin,
                                unpin: demo.unpin,
                                move: demo.move,
-                               moveTab: demo.moveTab)
+                               moveTab: demo.moveTab,
+                               setIcon: demo.setIcon)
         }
         #endif
         return SpacesStore(cache: SpacesCache(url: directory.appendingPathComponent("spaces.json")),
@@ -36,7 +37,8 @@ enum ZenSpacesService {
                            pin: pin,
                            unpin: unpin,
                            move: move,
-                           moveTab: moveTab)
+                           moveTab: moveTab,
+                           setIcon: setIcon)
     }
 
     private static func fetch() async throws -> SpacesFetchResult {
@@ -61,6 +63,10 @@ enum ZenSpacesService {
 
     private static func moveTab(_ tabID: String, _ folderID: String?) async throws -> MovedTab {
         try await ZenSpacesWriter(auth: auth()).moveTab(tabID, toFolder: folderID)
+    }
+
+    private static func setIcon(_ uuid: String, _ icon: SpaceIcon) async throws -> SpacesRecord {
+        try await ZenSpacesWriter(auth: auth()).setSpaceIcon(uuid, to: icon)
     }
 
     private static func auth() async throws -> SyncAuth {
@@ -136,6 +142,12 @@ private final class DemoSpaces {
         let record = SpacesRecord(id: parent.id, modified: Date(), cleartext: changed)
         records[index] = record
         return record
+    }
+
+    func setIcon(_ uuid: String, _ icon: SpaceIcon) async throws -> SpacesRecord {
+        try await Task.sleep(for: .seconds(1))
+        let stored = try ZenSpacesWriter.validIcon(icon)
+        return try edit(uuid, kind: "space") { $0["icon"] = stored.map(JSONValue.string) ?? .null }
     }
 
     func moveTab(_ tabID: String, _ folderID: String?) async throws -> MovedTab {

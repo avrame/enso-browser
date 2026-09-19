@@ -86,6 +86,8 @@ public enum ZenSpacesWriteError: Error, Equatable, CustomStringConvertible {
     case recordNotFound(String)
     case unexpectedRecord(id: String, reason: String)
     case invalidName
+    /// Only an emoji or one of Zen's built-in icons.
+    case invalidIcon
     /// Only web pages can be pinned.
     case unpinnableURL(String)
     /// A generated tab id already exists on the server (should never happen).
@@ -102,6 +104,7 @@ public enum ZenSpacesWriteError: Error, Equatable, CustomStringConvertible {
         case .recordNotFound: return "That item is no longer on the server. Pull to refresh."
         case .unexpectedRecord(_, let reason): return "The server copy looks different than expected: \(reason)"
         case .invalidName: return "The name can't be empty."
+        case .invalidIcon: return "Choose a single emoji or one of Zen's icons."
         case .unpinnableURL: return "Only web pages (http or https) can be pinned."
         case .idCollision: return "Couldn't create the pinned tab. Try again."
         case .conflict: return "It kept changing on another device. Try again."
@@ -413,6 +416,27 @@ public struct ZenSpacesWriter: Sendable {
             throw ZenSpacesWriteError.unexpectedRecord(id: parent.id, reason: "not a \(parent.kind)")
         }
         return Self.childList(data)
+    }
+
+    /// Sets a space's `icon`: an emoji, a Zen built-in icon, or none (null).
+    public func setSpaceIcon(_ uuid: String, to icon: SpaceIcon) async throws -> SpacesRecord {
+        let stored = try Self.validIcon(icon)
+        try await checkEngineVersion()
+        return try await updateRecord(id: uuid, kind: "space") { data in
+            data["icon"] = stored.map(JSONValue.string) ?? .null
+        }
+    }
+
+    public static func validIcon(_ icon: SpaceIcon) throws -> String? {
+        switch icon {
+        case .emoji(let emoji):
+            guard SpaceIcon.isEmoji(emoji) else { throw ZenSpacesWriteError.invalidIcon }
+        case .zen(let name):
+            guard SpaceIcon.zenIconNames.contains(name) else { throw ZenSpacesWriteError.invalidIcon }
+        case .none:
+            break
+        }
+        return icon.stored
     }
 
     /// Spaces and folders both keep their name in `data.name`.

@@ -92,6 +92,7 @@ struct ZenSpacesSheet: View {
     @State private var isSaving = false
     @State private var writeError: String?
     @State private var unpinning: TabRecord?
+    @State private var choosingIcon: SpaceRecord?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -116,6 +117,11 @@ struct ZenSpacesSheet: View {
                 .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         } message: { _ in
             Text("The new name also appears in Zen on your other devices.")
+        }
+        .sheet(item: $choosingIcon) { space in
+            ZenSpaceIconPicker(spaceName: space.name, current: space.spaceIcon) { icon in
+                setIcon(icon, for: space)
+            }
         }
         .confirmationDialog("Unpin “\(unpinning?.displayTitle ?? "")”?",
                             isPresented: isPresent($unpinning),
@@ -177,6 +183,18 @@ struct ZenSpacesSheet: View {
         Task {
             do {
                 try await store.move(itemID, in: parent, before: beforeID)
+            } catch {
+                writeError = Self.message(for: error)
+            }
+        }
+    }
+
+    private func setIcon(_ icon: SpaceIcon, for space: SpaceRecord) {
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                try await store.setIcon(icon, forSpace: space.uuid)
             } catch {
                 writeError = Self.message(for: error)
             }
@@ -260,6 +278,7 @@ struct ZenSpacesSheet: View {
                              onUnpin: { unpinning = $0 },
                              onMove: move,
                              onMoveToFolder: moveToFolder,
+                             onChooseIcon: { choosingIcon = $0 },
                              onOpen: onOpen,
                              onRefresh: { await store.refresh() })
                     .tag(space.record.uuid)
@@ -393,6 +412,7 @@ private struct ZenSpacePage: View {
     let onUnpin: (TabRecord) -> Void
     let onMove: ZenMove
     let onMoveToFolder: (TabRecord, String?) -> Void
+    let onChooseIcon: (SpaceRecord) -> Void
     let onOpen: (TabRecord) -> Void
     let onRefresh: () async -> Void
 
@@ -527,6 +547,11 @@ private struct ZenSpacePage: View {
                 Label("Rename Space…", systemImage: "pencil")
             }
             Button {
+                onChooseIcon(space.record)
+            } label: {
+                Label("Change Icon…", systemImage: "face.smiling")
+            }
+            Button {
                 withAnimation { editMode = .active }
             } label: {
                 Label("Reorder…", systemImage: "arrow.up.arrow.down")
@@ -639,29 +664,30 @@ private struct ZenSidebarItemView: View {
 private struct ZenSpaceIcon: View {
     let space: SpaceRecord
 
-    /// Zen space icons are emoji or `chrome://` image URLs, which cannot load here.
-    static func emoji(for space: SpaceRecord) -> String? {
-        guard let icon = space.icon, !icon.isEmpty, !icon.contains(":") else { return nil }
-        return icon
-    }
-
     static func menuTitle(for space: SpaceRecord) -> String {
-        emoji(for: space).map { "\($0)  \(space.name)" } ?? space.name
+        guard case .emoji(let emoji) = space.spaceIcon else { return space.name }
+        return "\(emoji)  \(space.name)"
     }
 
-    private var letterBackground: AnyShapeStyle {
-        guard let primary = space.parsedTheme?.primary else { return AnyShapeStyle(.quaternary) }
-        return AnyShapeStyle(Color(primary).opacity(0.45))
+    private var tint: Color? {
+        space.parsedTheme?.primary.map(Color.init)
     }
 
     var body: some View {
-        if let emoji = Self.emoji(for: space) {
+        switch space.spaceIcon {
+        case .emoji(let emoji):
             Text(emoji)
-        } else {
+        case .zen(let name):
+            Image(systemName: ZenSpaceIconSymbols.symbol(for: name))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(tint ?? .primary)
+                .frame(width: 22, height: 22)
+                .accessibilityHidden(true)
+        case .none:
             Text(space.name.prefix(1).uppercased())
                 .font(.caption.weight(.semibold))
                 .frame(width: 22, height: 22)
-                .background(letterBackground, in: Circle())
+                .background(tint.map { AnyShapeStyle($0.opacity(0.45)) } ?? AnyShapeStyle(.quaternary), in: Circle())
         }
     }
 }

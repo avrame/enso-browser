@@ -31,6 +31,11 @@ public struct ZenGradient: Sendable, Equatable {
     public let grain: Double
     /// Whether Zen would use light text on this background (shouldBeDarkMode).
     public let prefersDarkText: Bool
+    /// The space's color for controls and icons drawn on this background.
+    public let accent: SpaceTheme.RGB
+
+    /// WCAG's minimum for icons and controls.
+    public static let minimumAccentContrast = 3.0
 
     /// The base behind the sidebar where a window cannot be transparent
     /// (getToolbarModifiedBaseRaw).
@@ -50,9 +55,35 @@ public struct ZenGradient: Sendable, Equatable {
         self.base = base
         self.grain = theme.texture
         self.layers = Self.layers(solid, hasCustom: theme.colors.contains { $0.isCustom })
-        self.prefersDarkText = !Self.shouldBeDarkMode(primary: theme.primary ?? solid[0],
-                                                      opacity: theme.opacity,
-                                                      base: base)
+        let primary = theme.primary ?? solid[0]
+        let darkUI = Self.shouldBeDarkMode(primary: primary, opacity: theme.opacity, base: base)
+        self.prefersDarkText = !darkUI
+        self.accent = Self.readableAccent(primary: primary,
+                                          background: primary.mixed(with: base, amount: theme.opacity),
+                                          darkUI: darkUI,
+                                          darkSystem: dark)
+    }
+
+    /// Zen's getAccentColorForUI, then pushed lighter (dark UI) or darker
+    /// (light UI) in the same hue until it stands out from the background.
+    /// Zen needs no such step: it draws no controls in the space's color.
+    static func readableAccent(primary: SpaceTheme.RGB,
+                               background: SpaceTheme.RGB,
+                               darkUI: Bool,
+                               darkSystem: Bool) -> SpaceTheme.RGB {
+        var hsl = HSL(primary)
+        let isGray = primary.red == primary.green && primary.green == primary.blue
+        if !darkUI && !isGray {
+            hsl.saturation = min(1, hsl.saturation + 0.3)
+            hsl.lightness = hsl.lightness * 0.4 + (darkSystem ? 0.62 : 0.42) * 0.6
+        }
+        var accent = hsl.rgb
+        let step = darkUI ? 0.05 : -0.05
+        while contrast(accent, background) < minimumAccentContrast, (0...1).contains(hsl.lightness + step) {
+            hsl.lightness += step
+            accent = hsl.rgb
+        }
+        return accent
     }
 
     private static func layers(_ colors: [SpaceTheme.RGB], hasCustom: Bool) -> [Layer] {
@@ -107,5 +138,46 @@ public struct ZenGradient: Sendable, Equatable {
             value <= 0.03928 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
         }
         return 0.2126 * channel(color.red) + 0.7152 * channel(color.green) + 0.0722 * channel(color.blue)
+    }
+}
+
+/// Hue in degrees, saturation and lightness 0...1 (Zen's rgbToHsl/hslToRgb).
+struct HSL: Equatable {
+    var hue: Double
+    var saturation: Double
+    var lightness: Double
+
+    init(_ rgb: SpaceTheme.RGB) {
+        let high = max(rgb.red, rgb.green, rgb.blue)
+        let low = min(rgb.red, rgb.green, rgb.blue)
+        lightness = (high + low) / 2
+        guard high != low else {
+            hue = 0
+            saturation = 0
+            return
+        }
+        let delta = high - low
+        saturation = lightness > 0.5 ? delta / (2 - high - low) : delta / (high + low)
+        switch high {
+        case rgb.red: hue = ((rgb.green - rgb.blue) / delta + (rgb.green < rgb.blue ? 6 : 0)) * 60
+        case rgb.green: hue = ((rgb.blue - rgb.red) / delta + 2) * 60
+        default: hue = ((rgb.red - rgb.green) / delta + 4) * 60
+        }
+    }
+
+    var rgb: SpaceTheme.RGB {
+        guard saturation > 0 else { return SpaceTheme.RGB(red: lightness, green: lightness, blue: lightness) }
+        let high = lightness < 0.5 ? lightness * (1 + saturation) : lightness + saturation - lightness * saturation
+        let low = 2 * lightness - high
+        func channel(_ offset: Double) -> Double {
+            var t = hue / 360 + offset
+            if t < 0 { t += 1 }
+            if t > 1 { t -= 1 }
+            if t < 1.0 / 6 { return low + (high - low) * 6 * t }
+            if t < 1.0 / 2 { return high }
+            if t < 2.0 / 3 { return low + (high - low) * (2.0 / 3 - t) * 6 }
+            return low
+        }
+        return SpaceTheme.RGB(red: channel(1.0 / 3), green: channel(0), blue: channel(-1.0 / 3))
     }
 }

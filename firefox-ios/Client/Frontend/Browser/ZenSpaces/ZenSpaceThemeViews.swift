@@ -103,3 +103,16 @@ extension View {
         return environment(\.colorScheme, gradient.map { $0.prefersDarkText ? .light : .dark } ?? system)
     }
 }
+
+extension View {
+    /// Tints controls and icons over a space with a color that stands out
+    /// from its background (`ZenGradient.accent`).
+    func zenAccent(for theme: SpaceTheme?, system: ColorScheme) -> some View {
+        let accent = ZenGradient(theme: theme, dark: system == .dark).map { Color($0.accent) }
+        return tint(accent).environment(\.zenAccent, accent)
+    }
+}
+
+extension EnvironmentValues {
+    @Entry var zenAccent: Color?
+}

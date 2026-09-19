@@ -120,6 +120,33 @@ final class ZenGradientTests: XCTestCase {
         ])
     }
 
+    func testAccentStandsOutFromItsOwnBackground() throws {
+        // Capsas: Zen's raw accent for a dark UI is the blue the background is painted with.
+        let capsas = try XCTUnwrap(ZenGradient(theme: theme([rgb(77, 116, 178)], opacity: 0.789), dark: true))
+        let background = rgb(77, 116, 178).mixed(with: ZenGradient.base(dark: true), amount: 0.789)
+        XCTAssertLessThan(ZenGradient.contrast(rgb(77, 116, 178), background), 3, "the problem")
+        XCTAssertGreaterThanOrEqual(ZenGradient.contrast(capsas.accent, background), ZenGradient.minimumAccentContrast)
+        XCTAssertEqual(HSL(capsas.accent).hue, HSL(rgb(77, 116, 178)).hue, accuracy: 1, "same hue, only lighter")
+        XCTAssertGreaterThan(HSL(capsas.accent).lightness, HSL(rgb(77, 116, 178)).lightness)
+    }
+
+    func testAccentUsesZensLightUIAdjustment() throws {
+        let lemon = try XCTUnwrap(ZenGradient(theme: theme([rgb(250, 240, 120)], opacity: 0.2), dark: false))
+        let background = rgb(250, 240, 120).mixed(with: ZenGradient.base(dark: false), amount: 0.2)
+        XCTAssertTrue(lemon.prefersDarkText)
+        XCTAssertGreaterThanOrEqual(ZenGradient.contrast(lemon.accent, background), ZenGradient.minimumAccentContrast)
+        XCTAssertLessThan(HSL(lemon.accent).lightness, HSL(rgb(250, 240, 120)).lightness, "darker for a light UI")
+    }
+
+    func testHSLRoundTrips() {
+        for color in [rgb(77, 116, 178), rgb(250, 240, 120), rgb(0, 0, 0), rgb(128, 128, 128), rgb(255, 0, 64)] {
+            let back = HSL(color).rgb
+            XCTAssertEqual(back.red, color.red, accuracy: 0.0001)
+            XCTAssertEqual(back.green, color.green, accuracy: 0.0001)
+            XCTAssertEqual(back.blue, color.blue, accuracy: 0.0001)
+        }
+    }
+
     func testTextSchemeFollowsZensContrastRule() throws {
         let navy = try XCTUnwrap(ZenGradient(theme: theme([rgb(20, 30, 90)]), dark: false))
         XCTAssertFalse(navy.prefersDarkText, "a dark color gets light text even in light mode")

@@ -445,6 +445,7 @@ private struct ZenSpacePage: View {
             .refreshable { await onRefresh() }
         }
         .zenColorScheme(for: space.record.parsedTheme, system: systemScheme)
+        .zenAccent(for: space.record.parsedTheme, system: systemScheme)
         .background(ZenSpaceBackground(theme: space.record.parsedTheme, dark: systemScheme == .dark))
     }
 
@@ -679,8 +680,11 @@ private struct ZenSpaceIcon: View {
         return "\(emoji)  \(space.name)"
     }
 
+    @Environment(\.zenAccent) private var accent
+
+    /// On its own space's background the readable accent; elsewhere the primary.
     private var tint: Color? {
-        space.parsedTheme?.primary.map(Color.init)
+        accent ?? space.parsedTheme?.primary.map(Color.init)
     }
 
     var body: some View {

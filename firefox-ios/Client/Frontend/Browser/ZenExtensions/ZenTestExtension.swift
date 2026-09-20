@@ -60,7 +60,7 @@ enum ZenTestExtension {
                                                   in: .userDomainMask,
                                                   appropriateFor: nil,
                                                   create: true)
-        let directory = support.appendingPathComponent("ZenExtensions/zen-test", isDirectory: true)
+        let directory = support.appendingPathComponent("ZenTestExtension/zen-test", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         for (name, contents) in [("manifest.json", manifest), ("background.js", background), ("content.js", content)] {
             try Data(contents.utf8).write(to: directory.appendingPathComponent(name))

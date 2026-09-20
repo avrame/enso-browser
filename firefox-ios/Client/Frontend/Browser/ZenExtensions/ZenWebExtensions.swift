@@ -21,6 +21,8 @@ final class ZenWebExtensions: NSObject {
     /// Tabs already announced to WebKit. Extension APIs reject a web view
     /// whose tab it has never seen.
     private var knownTabs = Set<ObjectIdentifier>()
+    /// Packages in the store that would not load, for the settings screen.
+    private(set) var failures: [LoadFailure] = []
 
     var contexts: [WKWebExtensionContext] {
         controller.extensionContexts.sorted { ($0.webExtension.displayName ?? "") < ($1.webExtension.displayName ?? "") }
@@ -42,6 +44,50 @@ final class ZenWebExtensions: NSObject {
         controller.didFocusWindow(window)
         registerExistingTabs()
         installTestExtensionIfRequested()
+        Task { await loadInstalledExtensions() }
+    }
+
+    /// Loads every package in the store, newest state of disk wins.
+    func loadInstalledExtensions() async {
+        let packages: [URL]
+        do {
+            packages = try ZenExtensionStore.packages()
+        } catch {
+            logger.log("Could not read installed extensions: \(error)", level: .warning, category: .webview)
+            return
+        }
+        failures = []
+        for package in packages {
+            do {
+                try await install(resourceBaseURL: package)
+            } catch {
+                failures.append(LoadFailure(package: package.lastPathComponent,
+                                            message: (error as NSError).localizedDescription))
+                logger.log("Could not load \(package.lastPathComponent): \(error)", level: .warning, category: .webview)
+            }
+        }
+    }
+
+    /// Copies a package picked by the user into the store and loads it.
+    @discardableResult
+    func add(package url: URL) async throws -> WKWebExtensionContext {
+        let stored = try ZenExtensionStore.add(url)
+        do {
+            return try await install(resourceBaseURL: stored)
+        } catch {
+            try? ZenExtensionStore.remove(stored)
+            throw error
+        }
+    }
+
+    /// Unloads an extension and deletes its package.
+    func remove(_ context: WKWebExtensionContext) throws {
+        try controller.unload(context)
+        let identifier = context.uniqueIdentifier
+        for package in (try? ZenExtensionStore.packages()) ?? []
+        where ZenExtensionStore.identifier(of: package) == identifier {
+            try ZenExtensionStore.remove(package)
+        }
     }
 
     private func registerExistingTabs() {
@@ -76,17 +122,13 @@ final class ZenWebExtensions: NSObject {
             return existing
         }
         let context = WKWebExtensionContext(for: webExtension)
-        context.uniqueIdentifier = url.deletingPathExtension().lastPathComponent
+        context.uniqueIdentifier = ZenExtensionStore.identifier(of: url)
         context.isInspectable = true
         grantRequestedPermissions(in: context)
         try controller.load(context)
         logger.log("Loaded web extension \(webExtension.displayName ?? "?")", level: .info, category: .webview)
         await window?.restartWebViews()
         return context
-    }
-
-    func uninstall(_ context: WKWebExtensionContext) throws {
-        try controller.unload(context)
     }
 
     /// Everything the manifest asks for, up front. A permission sheet
@@ -176,6 +218,12 @@ extension ZenWebExtensions: TabManagerDelegate {
         register(selectedTab)
         controller.didActivateTab(selectedTab, previousActiveTab: previousTab)
     }
+}
+
+struct LoadFailure: Identifiable {
+    var id: String { package }
+    let package: String
+    let message: String
 }
 
 enum ZenWebExtensionError: Error {

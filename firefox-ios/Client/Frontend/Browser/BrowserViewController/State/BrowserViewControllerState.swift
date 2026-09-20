@@ -36,6 +36,7 @@ struct BrowserViewControllerState: ScreenState {
         case locationViewLongPressAction
         case menu
         case spaces
+        case extensions
         case reloadLongPressAction
         case tabTray
         case share
@@ -353,6 +354,11 @@ struct BrowserViewControllerState: ScreenState {
             return state
                 .resetTransientState()
                 .copy(displayView: .spaces)
+                .copy(buttonTapped: action.buttonTapped)
+        case GeneralBrowserActionType.showExtensions:
+            return state
+                .resetTransientState()
+                .copy(displayView: .extensions)
                 .copy(buttonTapped: action.buttonTapped)
         case GeneralBrowserActionType.showTabsLongPressActions:
             return handleShowTabsLongPressAction(state: state, action: action)

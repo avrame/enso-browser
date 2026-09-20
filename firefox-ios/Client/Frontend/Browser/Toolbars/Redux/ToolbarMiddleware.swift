@@ -293,11 +293,12 @@ final class ToolbarMiddleware {
                                               actionType: GeneralBrowserActionType.showMenu)
             store.dispatch(action)
 
-        case .spaces:
+        case .spaces, .extensions:
             cancelEditMode(windowUUID: action.windowUUID)
+            let zenAction: GeneralBrowserActionType = action.buttonType == .spaces ? .showSpaces : .showExtensions
             let action = GeneralBrowserAction(buttonTapped: action.buttonTapped,
                                               windowUUID: action.windowUUID,
-                                              actionType: GeneralBrowserActionType.showSpaces)
+                                              actionType: zenAction)
             store.dispatch(action)
 
         case .cancelEdit:

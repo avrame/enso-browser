@@ -255,6 +255,9 @@ struct NavigationBarState: StateType, Equatable {
         case .version1, .none:
             actions.append(middleAction)
             actions.append(.zenSpaces)
+            if ZenWebExtensions.shared.hasExtensions {
+                actions.append(.zenExtensions)
+            }
             actions.append(menuAction(iconName: StandardImageIdentifiers.Large.moreHorizontalRound,
                                       showWarningBadge: showWarningBadge))
             actions.append(tabsAction(iconName: iconName,
@@ -267,6 +270,9 @@ struct NavigationBarState: StateType, Equatable {
         case .version2:
             actions.append(middleAction)
             actions.append(.zenSpaces)
+            if ZenWebExtensions.shared.hasExtensions {
+                actions.append(.zenExtensions)
+            }
             actions.append(tabsAction(iconName: iconName,
                                       numberOfTabs: numberOfTabs,
                                       isPrivateMode: toolbarState.isPrivateMode,

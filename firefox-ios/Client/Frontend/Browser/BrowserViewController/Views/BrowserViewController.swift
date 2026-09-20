@@ -2868,6 +2868,8 @@ class BrowserViewController: UIViewController,
         case .spaces:
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             navigationHandler?.showZenSpaces(sourceView: state.buttonTapped ?? addressToolbarContainer)
+        case .extensions:
+            navigationHandler?.showZenExtensions(sourceView: state.buttonTapped ?? addressToolbarContainer)
         case .reloadLongPressAction:
             guard let button = state.buttonTapped else { return }
             presentRefreshLongPressAction(from: button)

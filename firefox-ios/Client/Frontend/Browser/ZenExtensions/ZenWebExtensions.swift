@@ -24,6 +24,9 @@ final class ZenWebExtensions: NSObject {
     /// Packages in the store that would not load, for the settings screen.
     private(set) var failures: [LoadFailure] = []
 
+    /// Whether the toolbar has anything to show a button for.
+    var hasExtensions: Bool { !controller.extensionContexts.isEmpty }
+
     var contexts: [WKWebExtensionContext] {
         controller.extensionContexts.sorted { ($0.webExtension.displayName ?? "") < ($1.webExtension.displayName ?? "") }
     }
@@ -271,6 +274,14 @@ extension ZenWebExtensions: WKWebExtensionControllerDelegate {
             if allowed { ZenExtensionGrants.allow(patterns: patterns, for: context.uniqueIdentifier) }
             completionHandler(allowed ? patterns : [], nil)
         }
+    }
+
+    func webExtensionController(_ controller: WKWebExtensionController,
+                                presentActionPopup action: WKWebExtension.Action,
+                                for context: WKWebExtensionContext,
+                                completionHandler: @escaping ((any Error)?) -> Void) {
+        ZenExtensionActions.present(action, from: nil)
+        completionHandler(nil)
     }
 
     private static func askTitle(_ context: WKWebExtensionContext) -> String {

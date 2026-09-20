@@ -22,6 +22,7 @@ struct ToolbarActionConfiguration: Equatable {
         case tabs
         case menu
         case spaces
+        case extensions
         case share
         case reload
         case stopLoading

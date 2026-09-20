@@ -979,6 +979,7 @@ struct AddressBarState: StateType, Sendable, Equatable {
             actions.append(
                 contentsOf: [
                     .zenSpaces,
+                ] + (ZenWebExtensions.shared.hasExtensions ? [.zenExtensions] : []) + [
                     menuAction(iconName: menuIcon, showWarningBadge: showWarningBadge),
                     tabsAction(
                         iconName: iconName,
@@ -1002,6 +1003,7 @@ struct AddressBarState: StateType, Sendable, Equatable {
                         nextTabScreenshot: nextTabScreenshot
                     ),
                     .zenSpaces,
+                ] + (ZenWebExtensions.shared.hasExtensions ? [.zenExtensions] : []) + [
                     menuAction(iconName: menuIcon, showWarningBadge: showWarningBadge)
                 ]
             )

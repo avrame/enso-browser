@@ -34,6 +34,7 @@ class MockBrowserCoordinator: BrowserNavigationHandler,
     var showMicrosurveyCalled = 0
     var showMainMenuCalled = 0
     var showZenSpacesCalled = 0
+    var showZenExtensionsCalled = 0
     var showPasswordGeneratorCalled = 0
     var navigateFromHomePanelCalled = 0
     var showContextMenuCalled = 0
@@ -131,6 +132,10 @@ class MockBrowserCoordinator: BrowserNavigationHandler,
 
     func showMainMenu() {
         showMainMenuCalled += 1
+    }
+
+    func showZenExtensions(sourceView: UIView?) {
+        showZenExtensionsCalled += 1
     }
 
     func showZenSpaces(sourceView: UIView?) {

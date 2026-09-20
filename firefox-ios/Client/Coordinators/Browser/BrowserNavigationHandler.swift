@@ -99,6 +99,10 @@ protocol BrowserNavigationHandler: AnyObject, QRCodeNavigationHandler {
     @MainActor
     func showZenSpaces(sourceView: UIView?)
 
+    /// Shows what the installed extensions offer for the selected tab
+    @MainActor
+    func showZenExtensions(sourceView: UIView?)
+
     /// Shows the toolbar's search engine selection bottom sheet (iPhone) or popup (iPad)
     @MainActor
     func showSearchEngineSelection(forSourceView sourceView: UIView)

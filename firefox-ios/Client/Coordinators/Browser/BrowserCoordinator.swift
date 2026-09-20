@@ -575,6 +575,25 @@ final class BrowserCoordinator: BaseCoordinator,
         mainMenuCoordinator.startWithNavController()
     }
 
+    func showZenExtensions(sourceView: UIView?) {
+        let items = ZenExtensionActions.items(for: tabManager.selectedTab)
+        guard items.count > 1 else {
+            items.first.map { ZenExtensionActions.run($0, from: sourceView) }
+            return
+        }
+        let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        for item in items {
+            let title = item.badge.isEmpty ? item.title : "\(item.title) (\(item.badge))"
+            sheet.addAction(UIAlertAction(title: title, style: .default) { _ in
+                ZenExtensionActions.run(item, from: sourceView)
+            })
+        }
+        sheet.addAction(UIAlertAction(title: .CancelString, style: .cancel))
+        sheet.popoverPresentationController?.sourceView = sourceView
+        sheet.popoverPresentationController?.sourceRect = sourceView?.bounds ?? .zero
+        present(sheet)
+    }
+
     func showZenSpaces(sourceView: UIView?) {
         let selected = tabManager.selectedTab
         let sheet = ZenSpacesSheet(

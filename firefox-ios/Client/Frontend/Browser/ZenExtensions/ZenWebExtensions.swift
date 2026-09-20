@@ -73,10 +73,22 @@ final class ZenWebExtensions: NSObject {
     func add(package url: URL) async throws -> WKWebExtensionContext {
         let stored = try ZenExtensionStore.add(url)
         do {
-            return try await install(resourceBaseURL: stored)
+            return try await install(resourceBaseURL: stored, settleBackgroundContent: true)
         } catch {
             try? ZenExtensionStore.remove(stored)
             throw error
+        }
+    }
+
+    /// Waits for the background content's first run, then loads the context
+    /// again so WebKit picks up what it registered.
+    private func reload(_ context: WKWebExtensionContext) async {
+        do {
+            try await context.loadBackgroundContent()
+            try controller.unload(context)
+            try controller.load(context)
+        } catch {
+            logger.log("Could not reload \(context.uniqueIdentifier): \(error)", level: .warning, category: .webview)
         }
     }
 
@@ -115,8 +127,14 @@ final class ZenWebExtensions: NSObject {
     }
 
     /// Loads the extension packaged at `url` (a directory or a ZIP/xpi).
+    ///
+    /// `settleBackgroundContent` is for a newly added extension: what its
+    /// background content sets up on first run (enabled declarativeNetRequest
+    /// rulesets, for one) only takes hold when the context loads, which for a
+    /// mid-session install has already happened. Loading it a second time,
+    /// once that first run is done, is what a relaunch would do.
     @discardableResult
-    func install(resourceBaseURL url: URL) async throws -> WKWebExtensionContext {
+    func install(resourceBaseURL url: URL, settleBackgroundContent: Bool = false) async throws -> WKWebExtensionContext {
         let webExtension = try await WKWebExtension(resourceBaseURL: url)
         if let existing = controller.extensionContext(for: webExtension) {
             return existing
@@ -127,6 +145,9 @@ final class ZenWebExtensions: NSObject {
         grantRequestedPermissions(in: context)
         try controller.load(context)
         logger.log("Loaded web extension \(webExtension.displayName ?? "?")", level: .info, category: .webview)
+        if settleBackgroundContent, webExtension.hasBackgroundContent {
+            await reload(context)
+        }
         await window?.restartWebViews()
         return context
     }

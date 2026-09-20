@@ -68,16 +68,44 @@ final class ZenWebExtensions: NSObject {
         }
     }
 
-    /// Copies a package picked by the user into the store and loads it.
-    @discardableResult
-    func add(package url: URL) async throws -> WKWebExtensionContext {
+    /// An extension copied into the store and read, but not yet loaded:
+    /// nothing runs until the user has seen what it asks for.
+    struct PendingInstall {
+        let webExtension: WKWebExtension
+        let package: URL
+
+        var name: String { webExtension.displayName ?? package.lastPathComponent }
+        var permissions: [String] { ZenExtensionPermissions.summary(of: webExtension) }
+    }
+
+    /// Copies a package picked by the user into the store and reads its
+    /// manifest. Pair every call with `commit` or `discard`.
+    func prepare(package url: URL) async throws -> PendingInstall {
         let stored = try ZenExtensionStore.add(url)
         do {
-            return try await install(resourceBaseURL: stored, settleBackgroundContent: true)
+            return PendingInstall(webExtension: try await WKWebExtension(resourceBaseURL: stored), package: stored)
         } catch {
             try? ZenExtensionStore.remove(stored)
             throw error
         }
+    }
+
+    /// Loads a prepared extension, granting what it asked for.
+    @discardableResult
+    func commit(_ pending: PendingInstall) async throws -> WKWebExtensionContext {
+        do {
+            return try await install(resourceBaseURL: pending.package,
+                                     grantRequested: true,
+                                     settleBackgroundContent: true)
+        } catch {
+            discard(pending)
+            throw error
+        }
+    }
+
+    /// Throws away a prepared extension the user did not allow.
+    func discard(_ pending: PendingInstall) {
+        try? ZenExtensionStore.remove(pending.package)
     }
 
     /// Waits for the background content's first run, then loads the context
@@ -96,6 +124,7 @@ final class ZenWebExtensions: NSObject {
     func remove(_ context: WKWebExtensionContext) throws {
         try controller.unload(context)
         let identifier = context.uniqueIdentifier
+        ZenExtensionGrants.forget(identifier)
         for package in (try? ZenExtensionStore.packages()) ?? []
         where ZenExtensionStore.identifier(of: package) == identifier {
             try ZenExtensionStore.remove(package)
@@ -128,13 +157,19 @@ final class ZenWebExtensions: NSObject {
 
     /// Loads the extension packaged at `url` (a directory or a ZIP/xpi).
     ///
+    /// `grantRequested` belongs to a fresh install the user has just
+    /// allowed. Later launches re-apply only what was allowed then, so
+    /// nothing is granted behind the user's back.
+    ///
     /// `settleBackgroundContent` is for a newly added extension: what its
     /// background content sets up on first run (enabled declarativeNetRequest
     /// rulesets, for one) only takes hold when the context loads, which for a
     /// mid-session install has already happened. Loading it a second time,
     /// once that first run is done, is what a relaunch would do.
     @discardableResult
-    func install(resourceBaseURL url: URL, settleBackgroundContent: Bool = false) async throws -> WKWebExtensionContext {
+    func install(resourceBaseURL url: URL,
+                 grantRequested: Bool = false,
+                 settleBackgroundContent: Bool = false) async throws -> WKWebExtensionContext {
         let webExtension = try await WKWebExtension(resourceBaseURL: url)
         if let existing = controller.extensionContext(for: webExtension) {
             return existing
@@ -142,8 +177,13 @@ final class ZenWebExtensions: NSObject {
         let context = WKWebExtensionContext(for: webExtension)
         context.uniqueIdentifier = ZenExtensionStore.identifier(of: url)
         context.isInspectable = true
-        grantRequestedPermissions(in: context)
         try controller.load(context)
+        // Granting only sticks once the context is loaded.
+        if grantRequested {
+            grantRequestedPermissions(in: context)
+        } else {
+            ZenExtensionGrants.apply(to: context)
+        }
         logger.log("Loaded web extension \(webExtension.displayName ?? "?")", level: .info, category: .webview)
         if settleBackgroundContent, webExtension.hasBackgroundContent {
             await reload(context)
@@ -152,15 +192,18 @@ final class ZenWebExtensions: NSObject {
         return context
     }
 
-    /// Everything the manifest asks for, up front. A permission sheet
-    /// replaces this once the UI exists.
+    /// What the install prompt showed the user, granted once they allowed it
+    /// and remembered for the next launch.
     private func grantRequestedPermissions(in context: WKWebExtensionContext) {
-        for permission in context.webExtension.requestedPermissions {
+        let permissions = context.webExtension.requestedPermissions
+        let patterns = context.webExtension.requestedPermissionMatchPatterns
+        for permission in permissions {
             context.setPermissionStatus(.grantedExplicitly, for: permission)
         }
-        for pattern in context.webExtension.requestedPermissionMatchPatterns {
+        for pattern in patterns {
             context.setPermissionStatus(.grantedExplicitly, for: pattern)
         }
+        ZenExtensionGrants.allow(permissions: permissions, patterns: patterns, for: context.uniqueIdentifier)
     }
 }
 
@@ -194,7 +237,12 @@ extension ZenWebExtensions: WKWebExtensionControllerDelegate {
                                 in tab: (any WKWebExtensionTab)?,
                                 for context: WKWebExtensionContext,
                                 completionHandler: @escaping (Set<WKWebExtension.Permission>, Date?) -> Void) {
-        completionHandler(permissions, nil)
+        let details = permissions.compactMap(ZenExtensionPermissions.description).sorted()
+        Task {
+            let allowed = await ZenExtensionPrompt.allow(title: Self.askTitle(context), details: details)
+            if allowed { ZenExtensionGrants.allow(permissions: permissions, for: context.uniqueIdentifier) }
+            completionHandler(allowed ? permissions : [], nil)
+        }
     }
 
     func webExtensionController(_ controller: WKWebExtensionController,
@@ -202,7 +250,14 @@ extension ZenWebExtensions: WKWebExtensionControllerDelegate {
                                 in tab: (any WKWebExtensionTab)?,
                                 for context: WKWebExtensionContext,
                                 completionHandler: @escaping (Set<URL>, Date?) -> Void) {
-        completionHandler(urls, nil)
+        let hosts = Set(urls.compactMap(\.host)).sorted()
+        Task {
+            let allowed = await ZenExtensionPrompt.allow(
+                title: Self.askTitle(context),
+                details: hosts.map { "Read and change your data on \($0)" }
+            )
+            completionHandler(allowed ? urls : [], nil)
+        }
     }
 
     func webExtensionController(_ controller: WKWebExtensionController,
@@ -210,7 +265,16 @@ extension ZenWebExtensions: WKWebExtensionControllerDelegate {
                                 in tab: (any WKWebExtensionTab)?,
                                 for context: WKWebExtensionContext,
                                 completionHandler: @escaping (Set<WKWebExtension.MatchPattern>, Date?) -> Void) {
-        completionHandler(patterns, nil)
+        let details = ZenExtensionPermissions.hostAccess(patterns).map { [$0] } ?? []
+        Task {
+            let allowed = await ZenExtensionPrompt.allow(title: Self.askTitle(context), details: details)
+            if allowed { ZenExtensionGrants.allow(patterns: patterns, for: context.uniqueIdentifier) }
+            completionHandler(allowed ? patterns : [], nil)
+        }
+    }
+
+    private static func askTitle(_ context: WKWebExtensionContext) -> String {
+        "Allow \(context.webExtension.displayName ?? "this extension")?"
     }
 }
 

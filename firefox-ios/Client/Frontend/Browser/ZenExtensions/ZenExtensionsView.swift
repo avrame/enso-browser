@@ -21,6 +21,7 @@ struct ZenExtensionsView: View {
     @State private var failures: [LoadFailure] = []
     @State private var isPicking = false
     @State private var isInstalling = false
+    @State private var pending: ZenWebExtensions.PendingInstall?
     @State private var failure: String?
 
     private static let packageTypes: [UTType] = [UTType(filenameExtension: "xpi") ?? .zip, .zip, .folder]
@@ -50,6 +51,20 @@ struct ZenExtensionsView: View {
             case .failure(let error):
                 failure = error.localizedDescription
             }
+        }
+        .alert("Add \(pending?.name ?? "")?",
+               isPresented: .constant(pending != nil),
+               presenting: pending) { pending in
+            Button("Don\u{2019}t Add", role: .cancel) {
+                ZenWebExtensions.shared.discard(pending)
+                self.pending = nil
+            }
+            Button("Add") {
+                self.pending = nil
+                allow(pending)
+            }
+        } message: { pending in
+            Text(permissionMessage(pending))
         }
         .onAppear(perform: reload)
     }
@@ -106,12 +121,25 @@ struct ZenExtensionsView: View {
         }
     }
 
+    /// Reads the package first; nothing loads until the user allows it.
     private func install(_ url: URL) {
         isInstalling = true
         failure = nil
         Task { @MainActor in
             do {
-                try await ZenWebExtensions.shared.add(package: url)
+                pending = try await ZenWebExtensions.shared.prepare(package: url)
+            } catch {
+                failure = "\(error)"
+            }
+            isInstalling = false
+        }
+    }
+
+    private func allow(_ pending: ZenWebExtensions.PendingInstall) {
+        isInstalling = true
+        Task { @MainActor in
+            do {
+                try await ZenWebExtensions.shared.commit(pending)
             } catch {
                 failure = "\(error)"
             }
@@ -129,6 +157,12 @@ struct ZenExtensionsView: View {
             }
         }
         reload()
+    }
+
+    private func permissionMessage(_ pending: ZenWebExtensions.PendingInstall) -> String {
+        let permissions = pending.permissions
+        guard !permissions.isEmpty else { return "It asks for no special access." }
+        return (["It will be able to:"] + permissions.map { "\u{2022} \($0)" }).joined(separator: "\n")
     }
 
     private func reload() {

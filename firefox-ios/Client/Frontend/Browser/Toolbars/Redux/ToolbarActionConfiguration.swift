@@ -42,6 +42,7 @@ struct ToolbarActionConfiguration: Equatable {
     var actionLabel: String?
     var iconName: String?
     var badgeImageName: String?
+    var badgeText: String?
     /// The image for the bottom badge in a `ToolbarButton`.
     var bottomBadgeImage: UIImage?
     var maskImageName: String?

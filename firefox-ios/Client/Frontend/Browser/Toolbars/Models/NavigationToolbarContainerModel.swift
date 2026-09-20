@@ -28,6 +28,7 @@ struct NavigationToolbarContainerModel: Equatable {
                 iconName: action.iconName,
                 title: action.actionLabel,
                 badgeImageName: action.badgeImageName,
+                badgeText: action.badgeText,
                 maskImageName: action.maskImageName,
                 numberOfTabs: action.numberOfTabs,
                 isEnabled: action.isEnabled,

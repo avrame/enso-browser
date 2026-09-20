@@ -20,6 +20,7 @@ enum ZenTestExtension {
       "description": "Shows a banner on every page and counts open tabs.",
       "permissions": ["tabs"],
       "host_permissions": ["<all_urls>"],
+      "action": { "default_title": "Zen Test Extension" },
       "background": { "service_worker": "background.js" },
       "content_scripts": [
         { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_idle" }
@@ -28,11 +29,21 @@ enum ZenTestExtension {
     """
 
     private static let background = """
+    async function showTabCount() {
+      const tabs = await browser.tabs.query({});
+      await browser.action.setBadgeText({ text: String(tabs.length) });
+    }
+
     browser.runtime.onMessage.addListener(async (message) => {
       if (message !== "tabCount") return undefined;
       const tabs = await browser.tabs.query({});
+      await showTabCount();
       return tabs.length;
     });
+
+    browser.tabs.onCreated.addListener(showTabCount);
+    browser.tabs.onRemoved.addListener(showTabCount);
+    showTabCount();
     """
 
     private static let content = """

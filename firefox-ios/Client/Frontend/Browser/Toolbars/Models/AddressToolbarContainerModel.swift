@@ -286,6 +286,7 @@ final class AddressToolbarContainerModel: Equatable {
             iconName: action.iconName,
             title: action.actionLabel,
             badgeImageName: action.badgeImageName,
+            badgeText: action.badgeText,
             bottomBadgeImage: action.bottomBadgeImage,
             maskImageName: action.maskImageName,
             templateModeForImage: action.templateModeForImage,

@@ -219,7 +219,8 @@ struct AddressBarState: StateType, Sendable, Equatable {
         case ToolbarActionType.traitCollectionDidChange:
             return handleTraitCollectionDidChangeAction(state: state, action: action)
 
-        case ToolbarActionType.showMenuWarningBadge:
+        case ToolbarActionType.showMenuWarningBadge,
+            ToolbarActionType.zenExtensionBadgeChanged:
             return handleShowMenuWarningBadgeAction(state: state, action: action)
 
         case ToolbarActionType.borderPositionChanged,

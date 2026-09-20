@@ -14,6 +14,9 @@ public struct ToolbarElement: Equatable {
     /// Badge name of the toolbar element
     let badgeImageName: String?
 
+    /// Text drawn in a pill on the element, e.g. an extension's badge count
+    let badgeText: String?
+
     /// Mask name of the badge's toolbar element
     let maskImageName: String?
 
@@ -93,6 +96,7 @@ public struct ToolbarElement: Equatable {
     public init(iconName: String? = nil,
                 title: String? = nil,
                 badgeImageName: String? = nil,
+                badgeText: String? = nil,
                 bottomBadgeImage: UIImage? = nil,
                 maskImageName: String? = nil,
                 templateModeForImage: Bool = true,
@@ -120,6 +124,7 @@ public struct ToolbarElement: Equatable {
         self.iconName = iconName
         self.title = title
         self.badgeImageName = badgeImageName
+        self.badgeText = badgeText
         self.bottomBadgeImage = bottomBadgeImage
         self.maskImageName = maskImageName
         self.templateModeForImage = templateModeForImage
@@ -150,6 +155,7 @@ public struct ToolbarElement: Equatable {
         lhs.iconName == rhs.iconName &&
         lhs.title == rhs.title &&
         lhs.badgeImageName == rhs.badgeImageName &&
+        lhs.badgeText == rhs.badgeText &&
         lhs.bottomBadgeImage == rhs.bottomBadgeImage &&
         lhs.maskImageName == rhs.maskImageName &&
         lhs.templateModeForImage == rhs.templateModeForImage &&

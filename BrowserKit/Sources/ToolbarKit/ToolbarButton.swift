@@ -20,6 +20,9 @@ class ToolbarButton: UIButton,
         static let horizontalTextInset: CGFloat = 5
         static let badgeIconSize = CGSize(width: 20, height: 20)
         static let bottomBadgeIconSize = CGSize(width: 10, height: 10)
+        static let badgeTextHeight: CGFloat = 14
+        static let badgeTextFontSize: CGFloat = 10
+        static let badgeTextPadding: CGFloat = 4
         static let defaultMinimumPressDuration: TimeInterval = 0.5
         static let minimumPressDurationWithLargeContentViewer: TimeInterval = 1.5
     }
@@ -32,6 +35,7 @@ class ToolbarButton: UIButton,
     private var backgroundColorNormal: UIColor = .clear
 
     private var badgeImageView: UIImageView?
+    private var badgeTextLabel: UILabel?
     private var maskImageView: UIImageView?
     private var bottomBadgeImageView: UIImageView?
 
@@ -136,6 +140,10 @@ class ToolbarButton: UIButton,
         configuration = config
         removeBadgeAndMaskFromSuperview()
 
+        if let badgeText = element.badgeText, !badgeText.isEmpty {
+            addBadgeText(badgeText)
+        }
+
         if let buttonBadgeImage = element.bottomBadgeImage {
             addBottomBadgeImage(buttonBadgeImage)
         } else if let badgeName = element.badgeImageName {
@@ -176,6 +184,30 @@ class ToolbarButton: UIButton,
 
         updatedConfiguration.background.backgroundColor = backgroundColorNormal
         configuration = updatedConfiguration
+    }
+
+    /// A small pill over the icon's top trailing corner, as an extension's
+    /// badge count is drawn.
+    private func addBadgeText(_ text: String) {
+        let label = UILabel()
+        label.text = text
+        label.font = .systemFont(ofSize: UX.badgeTextFontSize, weight: .semibold)
+        label.textAlignment = .center
+        label.textColor = backgroundColorNormal == .clear ? .systemBackground : backgroundColorNormal
+        label.backgroundColor = foregroundColorNormal
+        label.layer.cornerRadius = UX.badgeTextHeight / 2
+        label.layer.masksToBounds = true
+        label.translatesAutoresizingMaskIntoConstraints = false
+        badgeTextLabel = label
+
+        addSubview(label)
+        let width = label.intrinsicContentSize.width + UX.badgeTextPadding * 2
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: centerXAnchor, constant: UX.badgeTextHeight / 2),
+            label.bottomAnchor.constraint(equalTo: centerYAnchor),
+            label.heightAnchor.constraint(equalToConstant: UX.badgeTextHeight),
+            label.widthAnchor.constraint(equalToConstant: max(width, UX.badgeTextHeight))
+        ])
     }
 
     private func addBottomBadgeImage(_ image: UIImage) {
@@ -310,6 +342,8 @@ class ToolbarButton: UIButton,
     }
 
     private func removeBadgeAndMaskFromSuperview() {
+        badgeTextLabel?.removeFromSuperview()
+        badgeTextLabel = nil
         bottomBadgeImageView?.removeFromSuperview()
         badgeImageView?.removeFromSuperview()
         maskImageView?.removeFromSuperview()

@@ -27,6 +27,15 @@ final class ZenWebExtensions: NSObject {
     /// Whether the toolbar has anything to show a button for.
     var hasExtensions: Bool { !controller.extensionContexts.isEmpty }
 
+    /// The badge for the toolbar button: the first extension that sets one
+    /// for the selected tab.
+    var toolbarBadge: String? {
+        let tab = window?.tabManager?.selectedTab
+        return contexts.lazy
+            .compactMap { $0.action(for: tab)?.badgeText }
+            .first { !$0.isEmpty }
+    }
+
     var contexts: [WKWebExtensionContext] {
         controller.extensionContexts.sorted { ($0.webExtension.displayName ?? "") < ($1.webExtension.displayName ?? "") }
     }
@@ -150,7 +159,7 @@ final class ZenWebExtensions: NSObject {
         guard ZenTestExtension.isRequested else { return }
         Task {
             do {
-                try await install(resourceBaseURL: try ZenTestExtension.write())
+                try await install(resourceBaseURL: try ZenTestExtension.write(), grantRequested: true)
             } catch {
                 logger.log("Test extension failed: \(error)", level: .warning, category: .webview)
             }
@@ -274,6 +283,14 @@ extension ZenWebExtensions: WKWebExtensionControllerDelegate {
             if allowed { ZenExtensionGrants.allow(patterns: patterns, for: context.uniqueIdentifier) }
             completionHandler(allowed ? patterns : [], nil)
         }
+    }
+
+    func webExtensionController(_ controller: WKWebExtensionController,
+                                didUpdate action: WKWebExtension.Action,
+                                forExtensionContext context: WKWebExtensionContext) {
+        guard let windowUUID = window?.tabManager?.windowUUID else { return }
+        store.dispatch(ToolbarAction(windowUUID: windowUUID,
+                                     actionType: ToolbarActionType.zenExtensionBadgeChanged))
     }
 
     func webExtensionController(_ controller: WKWebExtensionController,

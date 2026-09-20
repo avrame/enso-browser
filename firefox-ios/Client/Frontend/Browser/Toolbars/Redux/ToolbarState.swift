@@ -211,6 +211,9 @@ struct ToolbarState: ScreenState, Sendable {
         case ToolbarActionType.showMenuWarningBadge:
             return handleShowMenuWarningBadge(state: state, action: action)
 
+        case ToolbarActionType.zenExtensionBadgeChanged:
+            return handleToolbarUpdates(state: state, action: action)
+
         case ToolbarActionType.numberOfTabsChanged:
             return handleNumberOfTabsChanged(state: state, action: action)
 

@@ -107,6 +107,10 @@ struct NavigationBarState: StateType, Equatable {
         case ToolbarActionType.backForwardButtonStateChanged:
             return handleBackForwardButtonStateChangedAction(state: state, action: action)
 
+        case ToolbarActionType.zenExtensionBadgeChanged:
+            guard let toolbarAction = action as? ToolbarAction else { return defaultState(from: state) }
+            return state.copy(actions: navigationActions(action: toolbarAction, navigationBarState: state))
+
         case ToolbarActionType.showMenuWarningBadge:
             return handleShowMenuWarningBadgeAction(state: state, action: action)
 

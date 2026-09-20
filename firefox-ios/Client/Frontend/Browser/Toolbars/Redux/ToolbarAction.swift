@@ -136,6 +136,7 @@ enum ToolbarActionType: ActionType {
     case borderPositionChanged
     case toolbarPositionChanged
     case showMenuWarningBadge
+    case zenExtensionBadgeChanged
     case didPasteSearchTerm
     case didStartEditingUrl
     case cancelEditOnHomepage

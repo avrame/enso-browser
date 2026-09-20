@@ -6,10 +6,14 @@ import Foundation
 
 extension ToolbarActionConfiguration {
     /// Sits next to the Spaces button, and only while something is installed.
-    static let zenExtensions = ToolbarActionConfiguration(
-        actionType: .extensions,
-        iconName: "puzzlepiece.extension",
-        isEnabled: true,
-        a11yLabel: "Extensions",
-        a11yId: AccessibilityIdentifiers.Toolbar.extensionsButton)
+    @MainActor
+    static var zenExtensions: ToolbarActionConfiguration {
+        ToolbarActionConfiguration(
+            actionType: .extensions,
+            iconName: "puzzlepiece.extension",
+            badgeText: ZenWebExtensions.shared.toolbarBadge,
+            isEnabled: true,
+            a11yLabel: "Extensions",
+            a11yId: AccessibilityIdentifiers.Toolbar.extensionsButton)
+    }
 }

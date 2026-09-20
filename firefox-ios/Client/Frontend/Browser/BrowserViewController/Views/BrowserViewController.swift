@@ -541,6 +541,7 @@ class BrowserViewController: UIViewController,
     private func didInit() {
         tabManager.addDelegate(self)
         tabManager.setNavigationDelegate(self)
+        ZenWebExtensions.shared.start(tabManager: tabManager)
         downloadQueue.addDelegate(self)
         self.searchEnginesManager.delegate = self
         let tabWindowUUID = tabManager.windowUUID

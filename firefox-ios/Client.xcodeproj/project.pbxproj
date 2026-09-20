@@ -12409,6 +12409,7 @@
 		ED85DD2C2DE669FF00487807 /* probes */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = probes; sourceTree = "<group>"; };
 		FC16179A00000000000000A1 /* WebCompat */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = WebCompat; sourceTree = "<group>"; };
 		2E4E00000000000000000003 /* ZenSpaces */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ZenSpaces; sourceTree = "<group>"; };
+		2E4E00000000000000000004 /* ZenExtensions */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ZenExtensions; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -16685,6 +16686,7 @@
 				034784BA2E2690F600D04A84 /* TermsOfUse */,
 				FC16179A00000000000000A1 /* WebCompat */,
 				2E4E00000000000000000003 /* ZenSpaces */,
+				2E4E00000000000000000004 /* ZenExtensions */,
 				81A3F6EE2C2DAED500BDD86B /* MainMenu */,
 				1D7B78952ADF324E0011E9F2 /* Event Queue */,
 				8A1E3BE428CBBF1E003388C4 /* SearchEngines */,
@@ -18431,6 +18433,7 @@
 				ED85DD2C2DE669FF00487807 /* probes */,
 				FC16179A00000000000000A1 /* WebCompat */,
 				2E4E00000000000000000003 /* ZenSpaces */,
+				2E4E00000000000000000004 /* ZenExtensions */,
 			);
 			name = Client;
 			packageProductDependencies = (

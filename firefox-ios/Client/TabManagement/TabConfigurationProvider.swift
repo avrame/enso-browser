@@ -60,6 +60,11 @@ class TabConfigurationProvider {
         )
         let engineConfiguration = configurationProvider.createConfiguration(parameters: parameters)
 
+        // Extensions run in normal tabs only.
+        if !isPrivate {
+            engineConfiguration.webViewConfiguration.webExtensionController = ZenWebExtensions.shared.controller
+        }
+
         // Register the reader mode scheme handler alongside the `internal://` one
         if ReaderModeSchemeHandler.isCustomSchemeEnabled {
             let webViewConfig = engineConfiguration.webViewConfiguration

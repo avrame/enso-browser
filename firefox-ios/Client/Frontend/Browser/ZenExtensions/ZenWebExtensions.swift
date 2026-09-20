@@ -236,6 +236,11 @@ extension ZenWebExtensions: WKWebExtensionControllerDelegate {
                                 openNewTabUsing configuration: WKWebExtension.TabConfiguration,
                                 for context: WKWebExtensionContext,
                                 completionHandler: @escaping ((any WKWebExtensionTab)?, (any Error)?) -> Void) {
+        if let url = configuration.url, let context = controller.extensionContext(for: url) {
+            open(url, of: context)
+            completionHandler(nil, nil)
+            return
+        }
         guard let window else {
             completionHandler(nil, ZenWebExtensionError.noWindow)
             return
@@ -286,6 +291,17 @@ extension ZenWebExtensions: WKWebExtensionControllerDelegate {
     }
 
     func webExtensionController(_ controller: WKWebExtensionController,
+                                openOptionsPageFor context: WKWebExtensionContext,
+                                completionHandler: @escaping ((any Error)?) -> Void) {
+        guard let url = context.optionsPageURL else {
+            completionHandler(ZenWebExtensionError.noOptionsPage)
+            return
+        }
+        open(url, of: context)
+        completionHandler(nil)
+    }
+
+    func webExtensionController(_ controller: WKWebExtensionController,
                                 didUpdate action: WKWebExtension.Action,
                                 forExtensionContext context: WKWebExtensionContext) {
         guard let windowUUID = window?.tabManager?.windowUUID else { return }
@@ -299,6 +315,15 @@ extension ZenWebExtensions: WKWebExtensionControllerDelegate {
                                 completionHandler: @escaping ((any Error)?) -> Void) {
         ZenExtensionActions.present(action, from: nil)
         completionHandler(nil)
+    }
+
+    /// Shows one of the extension's own pages, in place of any popup.
+    private func open(_ url: URL, of context: WKWebExtensionContext) {
+        guard let configuration = context.webViewConfiguration else { return }
+        let name = context.webExtension.displayName ?? "Extension"
+        ZenExtensionActions.dismissPopup {
+            ZenExtensionPageViewController.present(url: url, title: name, configuration: configuration)
+        }
     }
 
     private static func askTitle(_ context: WKWebExtensionContext) -> String {
@@ -341,4 +366,5 @@ struct LoadFailure: Identifiable {
 
 enum ZenWebExtensionError: Error {
     case noWindow
+    case noOptionsPage
 }

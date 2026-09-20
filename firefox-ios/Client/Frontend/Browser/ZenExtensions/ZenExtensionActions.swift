@@ -39,6 +39,18 @@ enum ZenExtensionActions {
         present(item.action, from: sourceView)
     }
 
+    /// Closes a popup that is on screen, e.g. when its own link takes the
+    /// user somewhere else, and continues once it is gone: presenting
+    /// anything while it is still dismissing silently does nothing.
+    static func dismissPopup(then next: @escaping () -> Void = {}) {
+        let presented = UIWindow.keyWindow?.rootViewController?.topmostPresented
+        guard let presented, presented.presentingViewController != nil else {
+            next()
+            return
+        }
+        presented.dismiss(animated: true, completion: next)
+    }
+
     static func present(_ action: WKWebExtension.Action, from sourceView: UIView?) {
         guard let controller = action.popupViewController,
               let presenter = UIWindow.keyWindow?.rootViewController?.topmostPresented,

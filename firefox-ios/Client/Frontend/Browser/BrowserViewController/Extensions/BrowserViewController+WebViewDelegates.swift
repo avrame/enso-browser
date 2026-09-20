@@ -650,6 +650,15 @@ extension BrowserViewController: WKNavigationDelegate {
             return
         }
 
+        // A page belonging to an installed extension. WebKit serves it only to
+        // a web view built from that extension's own configuration, so it is
+        // shown by ZenExtensionPageViewController, never in a tab - and never
+        // handed to another app.
+        if ZenWebExtensions.shared.controller.extensionContext(for: url) != nil {
+            decisionHandler(.cancel)
+            return
+        }
+
         if let scheme = url.scheme, !scheme.contains("firefox"), !shouldBlockExternalApps, !tab.isPrivate {
             handleCustomSchemeURLNavigation(url: url, navigationAction: navigationAction)
         }

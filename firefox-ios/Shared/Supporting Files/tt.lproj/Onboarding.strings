@@ -281,10 +281,10 @@
 "Onboarding.Welcome.Close.AccessibilityLabel.v121" = "Ябу һәм %@ таныштыру экраныннан чыгу";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. */
-"Onboarding.Welcome.Description.TreatementA.v120" = "Коммерциягә нигезләнмәгән оешма ярдәме белән ясалган браузерыбыз ширкәтләрнең Интернетта яшерен рәвештә Сезнең артыгыздан йөрүен туктатырга ярдәм итә.";
+"Onboarding.Welcome.Description.TreatementA.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. %@ is the app name (e.g. Firefox). */
-"Onboarding.Welcome.Description.v120" = "Коммерциягә нигезләнмәгән оешма ярдәме белән ясалган браузерыбыз ширкәтләрнең Интернетта яшерен рәвештә Сезнең артыгыздан йөрүен туктатырга ярдәм итә.";
+"Onboarding.Welcome.Description.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describe the title of link button is on the welcome onboarding page for current version in our Onboarding screens. */
 "Onboarding.Welcome.Link.Action.v114" = "Безнең xоусыйлык аңлатмасында күбрәк белегез";

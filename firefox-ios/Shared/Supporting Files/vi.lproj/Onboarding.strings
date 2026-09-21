@@ -149,7 +149,7 @@
 "Onboarding.Modern.BrandRefresh.TermsOfUse.AgreementButtonTitle.v148.v2" = "Tiếp tục";
 
 /* Description for the Terms of Use card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Nhanh chóng, an toàn và không bán đứng bạn. Trải nghiệm duyệt web giờ đây đã trở nên tốt hơn.";
+"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Built on Firefox, quieter. Your spaces follow you, and nothing follows you back.";
 
 /* The text for the manage settings link button in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.TermsOfUse.ManageLink.v148" = "Quản lý cài đặt";
@@ -176,7 +176,7 @@
 "Onboarding.Modern.BrandRefresh.Welcome.ActionTreatmentA.v148" = "Đặt làm trình duyệt mặc định";
 
 /* Description for the welcome card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "Chúng tôi bảo vệ dữ liệu của bạn và tự động chặn các công ty theo dõi hoạt động của bạn.";
+"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "Blocks the companies that follow you between sites, without collecting anything itself.";
 
 /* Button to skip the welcome card in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.Welcome.Skip.v148" = "Không phải bây giờ";
@@ -266,7 +266,7 @@
 "Onboarding.Modern.TermsOfService.AgreementButtonTitle.v145" = "Tiếp tục";
 
 /* Description for the Terms of Service screen in the v2 onboarding flow. The '\n' symbols denote line breaks. %@ is the company name (e.g. Mozilla) */
-"Onboarding.Modern.TermsOfService.Description.v145" = "Tự động bảo vệ thông tin cá nhân của bạn\nTải trang web nhanh và tìm kiếm thông minh hơn\nĐược mang đến cho bạn bởi tổ chức phi lợi nhuận %@, được tin cậy trong hơn 20 năm";
+"Onboarding.Modern.TermsOfService.Description.v145" = "Automatic protection of your personal info\nLoad sites fast and search smarter\nCollects nothing about you, and never has";
 
 /* Title for the Manage button link, in the Terms of Service screen for redirecting the user to the Manage data collection preferences screen. */
 "Onboarding.Modern.TermsOfService.ManageLink.v140" = "Quản lý";
@@ -455,10 +455,10 @@
 "Onboarding.Welcome.Close.AccessibilityLabel.v121" = "Đóng và thoát khỏi Khởi đầu %@";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. */
-"Onboarding.Welcome.Description.TreatementA.v120" = "Trình duyệt được hỗ trợ phi lợi nhuận của chúng tôi giúp ngăn các công ty bí mật theo dõi bạn trên web.";
+"Onboarding.Welcome.Description.TreatementA.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. %@ is the app name (e.g. Firefox). */
-"Onboarding.Welcome.Description.v120" = "Trình duyệt được hỗ trợ phi lợi nhuận của chúng tôi giúp ngăn các công ty bí mật theo dõi bạn trên web.";
+"Onboarding.Welcome.Description.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describe the title of link button is on the welcome onboarding page for current version in our Onboarding screens. */
 "Onboarding.Welcome.Link.Action.v114" = "Tìm hiểu thêm trong thông báo bảo mật của chúng tôi";

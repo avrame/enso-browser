@@ -149,7 +149,7 @@
 "Onboarding.Modern.BrandRefresh.TermsOfUse.AgreementButtonTitle.v148.v2" = "Dalej";
 
 /* Description for the Terms of Use card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Spěšny, wěsty a njebuźo was wupśedawaś. Pśeglědowanje jo jadnorje lěpše.";
+"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Built on Firefox, quieter. Your spaces follow you, and nothing follows you back.";
 
 /* The text for the manage settings link button in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.TermsOfUse.ManageLink.v148" = "Nastajenja zastojaś";
@@ -176,7 +176,7 @@
 "Onboarding.Modern.BrandRefresh.Welcome.ActionTreatmentA.v148" = "Ako standardny wobglědowak nastajiś";
 
 /* Description for the welcome card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "Šćitamy waše daty a zawoborujomy awtomatiski pśedewześam pśi wusnuchlenju, gaž klikaśo.";
+"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "Blocks the companies that follow you between sites, without collecting anything itself.";
 
 /* Button to skip the welcome card in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.Welcome.Skip.v148" = "Nic něnto";
@@ -266,7 +266,7 @@
 "Onboarding.Modern.TermsOfService.AgreementButtonTitle.v145" = "Dalej";
 
 /* Description for the Terms of Service screen in the v2 onboarding flow. The '\n' symbols denote line breaks. %@ is the company name (e.g. Mozilla) */
-"Onboarding.Modern.TermsOfService.Description.v145" = "Awtomatiski šćit wašych wósobinskich informacijow\nZacytajśo sedła malsnje a pytajśo wěcej inteligentnje\nWam wót za wše wužytneje organizacije %@ pśinjasone, kótarejž južo 20 lět dowěrimy";
+"Onboarding.Modern.TermsOfService.Description.v145" = "Automatic protection of your personal info\nLoad sites fast and search smarter\nCollects nothing about you, and never has";
 
 /* Title for the Manage button link, in the Terms of Service screen for redirecting the user to the Manage data collection preferences screen. */
 "Onboarding.Modern.TermsOfService.ManageLink.v140" = "Zastojaś";
@@ -455,10 +455,10 @@
 "Onboarding.Welcome.Close.AccessibilityLabel.v121" = "Zapokazanje %@ zacyniś a skóńcyś";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. */
-"Onboarding.Welcome.Description.TreatementA.v120" = "Naš za wšykne wužytny wobglědowak pśedewześam zawoborujo, wam kšajźu pó interneśe slědowaś.";
+"Onboarding.Welcome.Description.TreatementA.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. %@ is the app name (e.g. Firefox). */
-"Onboarding.Welcome.Description.v120" = "Naš za wšykne wužytny wobglědowak pśedewześam zawoborujo, wam kšajźu pó interneśe slědowaś.";
+"Onboarding.Welcome.Description.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describe the title of link button is on the welcome onboarding page for current version in our Onboarding screens. */
 "Onboarding.Welcome.Link.Action.v114" = "Zgóńśo wěcej w našej powěźeńce priwatnosći";

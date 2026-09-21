@@ -188,10 +188,10 @@
 "Onboarding.Welcome.Close.AccessibilityLabel.v121" = "Serriñ ha kuitaat pajenn degemer %@";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. */
-"Onboarding.Welcome.Description.TreatementA.v120" = "Hor merdeer harpet gant un aozadur hep gounidoù a sikour da herzel an embregerezhioù d'ho heuliañ pep lec'h er web.";
+"Onboarding.Welcome.Description.TreatementA.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. %@ is the app name (e.g. Firefox). */
-"Onboarding.Welcome.Description.v120" = "Hor merdeer harpet gant un aozadur hep gounidoù a sikour da herzel an embregerezhioù d'ho heuliañ pep lec'h er web.";
+"Onboarding.Welcome.Description.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describe the title of link button is on the welcome onboarding page for current version in our Onboarding screens. */
 "Onboarding.Welcome.Link.Action.v114" = "Lennit hon evezhiadenn a-fet buhez prevez evit gouzout hiroc’h";

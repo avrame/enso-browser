@@ -149,7 +149,7 @@
 "Onboarding.Modern.BrandRefresh.TermsOfUse.AgreementButtonTitle.v148.v2" = "继续";
 
 /* Description for the Terms of Use card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "快速、安全，绝不出卖您。纯粹带来更好的浏览体验。";
+"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Built on Firefox, quieter. Your spaces follow you, and nothing follows you back.";
 
 /* The text for the manage settings link button in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.TermsOfUse.ManageLink.v148" = "管理设置";
@@ -176,7 +176,7 @@
 "Onboarding.Modern.BrandRefresh.Welcome.ActionTreatmentA.v148" = "设为默认浏览器";
 
 /* Description for the welcome card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "我们会保护您的数据，并自动阻止大公司窥探您的浏览活动。";
+"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "Blocks the companies that follow you between sites, without collecting anything itself.";
 
 /* Button to skip the welcome card in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.Welcome.Skip.v148" = "暂时不要";
@@ -266,7 +266,7 @@
 "Onboarding.Modern.TermsOfService.AgreementButtonTitle.v145" = "继续";
 
 /* Description for the Terms of Service screen in the v2 onboarding flow. The '\n' symbols denote line breaks. %@ is the company name (e.g. Mozilla) */
-"Onboarding.Modern.TermsOfService.Description.v145" = "自动保护个人信息\n加载网站快如风，搜索更智能\n非营利组织 %@ 出品，深受信任 20 余载";
+"Onboarding.Modern.TermsOfService.Description.v145" = "Automatic protection of your personal info\nLoad sites fast and search smarter\nCollects nothing about you, and never has";
 
 /* Title for the Manage button link, in the Terms of Service screen for redirecting the user to the Manage data collection preferences screen. */
 "Onboarding.Modern.TermsOfService.ManageLink.v140" = "管理";
@@ -455,10 +455,10 @@
 "Onboarding.Welcome.Close.AccessibilityLabel.v121" = "关闭并退出 %@ 导览";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. */
-"Onboarding.Welcome.Description.TreatementA.v120" = "这款由非营利组织支持的浏览器会自动阻止大公司在网上偷偷跟踪您。";
+"Onboarding.Welcome.Description.TreatementA.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. %@ is the app name (e.g. Firefox). */
-"Onboarding.Welcome.Description.v120" = "这款由非营利组织支持的浏览器会自动阻止大公司在网上偷偷跟踪您。";
+"Onboarding.Welcome.Description.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describe the title of link button is on the welcome onboarding page for current version in our Onboarding screens. */
 "Onboarding.Welcome.Link.Action.v114" = "阅读我们的隐私声明以了解更多信息";

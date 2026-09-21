@@ -149,7 +149,7 @@
 "Onboarding.Modern.BrandRefresh.TermsOfUse.AgreementButtonTitle.v148.v2" = "Cuntinuà";
 
 /* Description for the Terms of Use card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Rapida, sicura è degna di cunfidenza. Ora a navigazione hè ancu più bella.";
+"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Built on Firefox, quieter. Your spaces follow you, and nothing follows you back.";
 
 /* The text for the manage settings link button in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.TermsOfUse.ManageLink.v148" = "Amministrà i parametri";
@@ -176,7 +176,7 @@
 "Onboarding.Modern.BrandRefresh.Welcome.ActionTreatmentA.v148" = "Sceglie cum’è navigatore predefinitu";
 
 /* Description for the welcome card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "Prutigemu i vostri dati è impedimu autumaticamente l’imprese di spiunà i vostri clicchi.";
+"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "Blocks the companies that follow you between sites, without collecting anything itself.";
 
 /* Button to skip the welcome card in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.Welcome.Skip.v148" = "Micca subitu";
@@ -266,7 +266,7 @@
 "Onboarding.Modern.TermsOfService.AgreementButtonTitle.v145" = "Cuntinuà";
 
 /* Description for the Terms of Service screen in the v2 onboarding flow. The '\n' symbols denote line breaks. %@ is the company name (e.g. Mozilla) */
-"Onboarding.Modern.TermsOfService.Description.v145" = "Prutezzione autumatica di i vostri dati persunali\nCaricamentu in furia di i siti è ricerca astuta\nCuncepitu da l’urganismu senza scopu lucrativu %@, degnu di cunfidenza dapoi più di 20 anni";
+"Onboarding.Modern.TermsOfService.Description.v145" = "Automatic protection of your personal info\nLoad sites fast and search smarter\nCollects nothing about you, and never has";
 
 /* Title for the Manage button link, in the Terms of Service screen for redirecting the user to the Manage data collection preferences screen. */
 "Onboarding.Modern.TermsOfService.ManageLink.v140" = "Amministrà";
@@ -455,10 +455,10 @@
 "Onboarding.Welcome.Close.AccessibilityLabel.v121" = "Chjode è compie u prucessu d’accolta di %@";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. */
-"Onboarding.Welcome.Description.TreatementA.v120" = "U nostru navigatore sustinutu da un urganismu senza scopu lucrativu impedisce l’imprese di seguitavvi da manera sicreta nant’à u Web.";
+"Onboarding.Welcome.Description.TreatementA.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. %@ is the app name (e.g. Firefox). */
-"Onboarding.Welcome.Description.v120" = "U nostru navigatore sustinutu da un urganismu senza scopu lucrativu impedisce l’imprese di seguitavvi da manera sicreta nant’à u Web.";
+"Onboarding.Welcome.Description.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describe the title of link button is on the welcome onboarding page for current version in our Onboarding screens. */
 "Onboarding.Welcome.Link.Action.v114" = "Sapene di più in a nostra dichjarazione di cunfidenzialità";

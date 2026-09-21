@@ -149,7 +149,7 @@
 "Onboarding.Modern.BrandRefresh.TermsOfUse.AgreementButtonTitle.v148.v2" = "Lean air adhart";
 
 /* Description for the Terms of Use card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Luath, sàbhailte agus cha reic e d’ anam. Brabhsadh nas fheàrr.";
+"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Built on Firefox, quieter. Your spaces follow you, and nothing follows you back.";
 
 /* The text for the manage settings link button in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.TermsOfUse.ManageLink.v148" = "Stiùirich na roghainnean";
@@ -176,7 +176,7 @@
 "Onboarding.Modern.BrandRefresh.Welcome.ActionTreatmentA.v148" = "Suidhich mar am brabhsair bunaiteach";
 
 /* Description for the welcome card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "Dìonaidh sinn an dàta agad is sinne a’ bacadh companaidhean o bhith a’ cumail sùil air a’ bhriogadh a nì thu o thùs.";
+"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "Blocks the companies that follow you between sites, without collecting anything itself.";
 
 /* Button to skip the welcome card in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.Welcome.Skip.v148" = "Chan ann an-dràsta";
@@ -266,7 +266,7 @@
 "Onboarding.Modern.TermsOfService.AgreementButtonTitle.v145" = "Lean air adhart";
 
 /* Description for the Terms of Service screen in the v2 onboarding flow. The '\n' symbols denote line breaks. %@ is the company name (e.g. Mozilla) */
-"Onboarding.Modern.TermsOfService.Description.v145" = "Dìon fèin-obrachail dhan fhiosrachadh phearsanta agad\nLuchdaich làraichean gu luath ’s dèan lorg air dòigh thapaidh\nAir a dhealbhadh dhut le %@, buidheann neo-phrothaideach ’s earbsach";
+"Onboarding.Modern.TermsOfService.Description.v145" = "Automatic protection of your personal info\nLoad sites fast and search smarter\nCollects nothing about you, and never has";
 
 /* Title for the Manage button link, in the Terms of Service screen for redirecting the user to the Manage data collection preferences screen. */
 "Onboarding.Modern.TermsOfService.ManageLink.v140" = "Stiùirich";
@@ -455,10 +455,10 @@
 "Onboarding.Welcome.Close.AccessibilityLabel.v121" = "Dùin is fàg bòrdachadh %@";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. */
-"Onboarding.Welcome.Description.TreatementA.v120" = "Cuiridh am brabhsair againn - fear nach eil airson prothaid - casg air companaidhean o bhith gad leantainn gu dìomhair air feadh an lìn.";
+"Onboarding.Welcome.Description.TreatementA.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. %@ is the app name (e.g. Firefox). */
-"Onboarding.Welcome.Description.v120" = "Cuiridh am brabhsair againn - fear nach eil airson prothaid - casg air companaidhean o bhith gad leantainn gu dìomhair air feadh an lìn.";
+"Onboarding.Welcome.Description.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describe the title of link button is on the welcome onboarding page for current version in our Onboarding screens. */
 "Onboarding.Welcome.Link.Action.v114" = "Faigh barrachd fiosrachaidh ann an aithris na prìobhaideachd againn";

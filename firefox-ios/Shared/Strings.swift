@@ -1108,18 +1108,18 @@ extension String {
             public static let TrackersBlockedTemp = MZLocalizedString(
                 key: "FirefoxHomepage.TrackerBlocker.TrackersBlocked.v153b",
                 tableName: "FirefoxHomepage",
-                value: "Trackers Blocked: %@",
+                value: "%@ trackers blocked",
                 comment: "The numbers of trackers we've blocked since we started tracking. The %@ placeholder is the actual number of trackers blocked.")
             public static let TrackersBlocked = MZLocalizedString(
                 key: "FirefoxHomepage.TrackerBlocker.TrackersBlocked.v155",
                 tableName: "FirefoxHomepage",
-                value: "Trackers Blocked: %@",
+                value: "%@ trackers blocked",
                 comment: "The numbers of trackers we've blocked since we started tracking. The %@ placeholder is the actual number of trackers blocked.")
             public static let NoTrackersBlocked = MZLocalizedString(
                 key: "FirefoxHomepage.TrackerBlocker.NoTrackersBlocked.v153",
                 tableName: "FirefoxHomepage",
-                value: "You’re Protected",
-                comment: "The text shown when we turn on the Tracker Blocker feature on the homepage, and the number of trackers blocked is zero.")
+                value: "No trackers blocked yet",
+                comment: "The text shown when the Tracker Blocker feature is on and the number of trackers blocked is zero.")
         }
 
         public struct Pocket {
@@ -2055,11 +2055,10 @@ extension String {
                         tableName: "Onboarding",
                         value: "Open all your links with built-in privacy",
                         comment: "Title for the welcome card in the v149 brand refresh onboarding flow.")
-                    public static let Description = MZLocalizedString(
-                        key: "Onboarding.Modern.BrandRefresh.Welcome.Description.v148",
-                        tableName: "Onboarding",
-                        value: "We protect your data and automatically block companies from spying on your clicks.",
-                        comment: "Description for the welcome card in the v148 brand refresh onboarding flow.")
+                    /// Ensō's own, not localized: "We protect your data" is a
+                    /// promise in Mozilla's voice, made on Mozilla's behalf.
+                    public static let Description =
+                        "Blocks the companies that follow you between sites, without collecting anything itself."
                     public static let ActionTreatmentA = MZLocalizedString(
                         key: "Onboarding.Modern.BrandRefresh.Welcome.ActionTreatmentA.v148",
                         tableName: "Onboarding",
@@ -9204,11 +9203,11 @@ extension String {
                 tableName: "Onboarding",
                 value: "Welcome to an independent internet",
                 comment: "String used to describes the title of what Firefox is on the welcome onboarding page for current version in our Onboarding screens.")
-            public static let OnboardingWelcomeDescription = MZLocalizedString(
-                key: "Onboarding.Welcome.Description.v120",
-                tableName: "Onboarding",
-                value: "Blocks the companies that follow you from site to site, and collects nothing about you itself.",
-                comment: "String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. %@ is the app name (e.g. Firefox).")
+            /// Ensō's own, not localized: the line it replaces claimed a
+            /// non-profit backer this browser does not have, and said so in
+            /// every translation. See Branding.
+            public static let OnboardingWelcomeDescription =
+                "Blocks the companies that follow you from site to site, and collects nothing about you itself."
             public static let OnboardingWelcomeActionTreatementA = MZLocalizedString(
                 key: "Onboarding.Welcome.ActionTreatementA.v114",
                 tableName: "Onboarding",

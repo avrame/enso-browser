@@ -131,10 +131,10 @@
 "Onboarding.Welcome.Close.AccessibilityLabel.v121" = "Close and exit %@ onboarding";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. */
-"Onboarding.Welcome.Description.TreatementA.v120" = "Our non-profit backed browser helps stop companies from secretly following you around the web.";
+"Onboarding.Welcome.Description.TreatementA.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. %@ is the app name (e.g. Firefox). */
-"Onboarding.Welcome.Description.v120" = "Our non-profit backed browser helps stop companies from secretly following you around the web.";
+"Onboarding.Welcome.Description.v120" = "Blocks the companies that follow you from site to site, and collects nothing about you itself.";
 
 /* String used to describe the title of link button is on the welcome onboarding page for current version in our Onboarding screens. */
 "Onboarding.Welcome.Link.Action.v114" = "Learn more in our privacy notice";
@@ -293,7 +293,7 @@
 "Onboarding.Modern.TermsOfService.Title.v145" = "Take charge of the internet";
 
 /* Description for the Terms of Service screen in the v2 onboarding flow. The '\n' symbols denote line breaks. %@ is the company name (e.g. Mozilla)*/
-"Onboarding.Modern.TermsOfService.Description.v145" = "Automatic protection of your personal info\nLoad sites fast and search smarter\nBrought to you by the non-profit %@, trusted for over 20 years";
+"Onboarding.Modern.TermsOfService.Description.v145" = "Automatic protection of your personal info\nLoad sites fast and search smarter\nCollects nothing about you, and never has";
 
 /* Title for the confirmation button on the Terms of Service screen. */
 "Onboarding.Modern.TermsOfService.AgreementButtonTitle.v145" = "Continue";
@@ -320,7 +320,7 @@
 "Onboarding.Modern.BrandRefresh.TermsOfUse.Title.v148" = "Get ready to run free";
 
 /* Description for the Terms of Use card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Speedy, safe, and won’t sell you out. Browsing just got better.";
+"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Built on Firefox, quieter. Your spaces follow you, and nothing follows you back.";
 
 /* Agreement text for Terms of Use in the v148 brand refresh onboarding flow. %@ is the Terms of Use link button that redirects the user to the Terms of Use page. */
 "Onboarding.Modern.BrandRefresh.TermsOfUse.TermsOfUseAgreement.v148" = "By continuing, you agree to the %@";
@@ -356,7 +356,7 @@
 "Onboarding.Modern.BrandRefresh.Welcome.TitleV3.v149" = "Open all your links with built-in privacy";
 
 /* Description for the welcome card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "We protect your data and automatically block companies from spying on your clicks.";
+"Onboarding.Modern.BrandRefresh.Welcome.Description.v148" = "Blocks the companies that follow you between sites, without collecting anything itself.";
 
 /* Action button to set the app as the default browser in the v148 brand refresh onboarding flow. */
 "Onboarding.Modern.BrandRefresh.Welcome.ActionTreatmentA.v148" = "Set as Default Browser";

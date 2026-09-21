@@ -2017,11 +2017,11 @@ extension String {
 
             public struct BrandRefresh {
                 public struct TermsOfUse {
-                    public static let Description = MZLocalizedString(
-                        key: "Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148",
-                        tableName: "Onboarding",
-                        value: "Speedy, safe, and won’t sell you out. Browsing just got better.",
-                        comment: "Description for the Terms of Use card in the v148 brand refresh onboarding flow.")
+                    /// Ensō's own, not localized: Firefox's tagline is Mozilla's
+                    /// writing about Mozilla's browser, and the translations of it
+                    /// say the same thing in 478 languages. See Branding.
+                    public static let Description =
+                        "Built on Firefox, quieter. Your spaces follow you, and nothing follows you back."
                     public static let TermsOfUseAgreement = MZLocalizedString(
                         key: "Onboarding.Modern.BrandRefresh.TermsOfUse.TermsOfUseAgreement.v148",
                         tableName: "Onboarding",
@@ -2311,11 +2311,13 @@ extension String {
                     tableName: "Onboarding",
                     value: "Take charge of the internet",
                     comment: "Title for the Terms of Service screen in the v2 onboarding flow.")
-                public static let Description = MZLocalizedString(
-                    key: "Onboarding.Modern.TermsOfService.Description.v145",
-                    tableName: "Onboarding",
-                    value: "Automatic protection of your personal info\nLoad sites fast and search smarter\nBrought to you by the non-profit %@, trusted for over 20 years",
-                    comment: "Description for the Terms of Service screen in the v2 onboarding flow. The '\\n' symbols denote line breaks. %@ is the company name (e.g. Mozilla)")
+                /// Ensō's own: the line it replaces credited Mozilla, a non-profit
+                /// this browser has nothing to do with.
+                public static let Description = """
+                Automatic protection of your personal info
+                Load sites fast and search smarter
+                Collects nothing about you, and never has
+                """
                 public static let AgreementButtonTitle = MZLocalizedString(
                     key: "Onboarding.Modern.TermsOfService.AgreementButtonTitle.v145",
                     tableName: "Onboarding",
@@ -9205,7 +9207,7 @@ extension String {
             public static let OnboardingWelcomeDescription = MZLocalizedString(
                 key: "Onboarding.Welcome.Description.v120",
                 tableName: "Onboarding",
-                value: "Our non-profit backed browser helps stop companies from secretly following you around the web.",
+                value: "Blocks the companies that follow you from site to site, and collects nothing about you itself.",
                 comment: "String used to describes the description of what Firefox is on the welcome onboarding page for current version in our Onboarding screens. %@ is the app name (e.g. Firefox).")
             public static let OnboardingWelcomeActionTreatementA = MZLocalizedString(
                 key: "Onboarding.Welcome.ActionTreatementA.v114",

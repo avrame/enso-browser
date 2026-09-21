@@ -6,7 +6,7 @@
 #include "Release.xcconfig"
 #include "version.xcconfig"
 
-MOZ_BUNDLE_DISPLAY_NAME = Firefox
+MOZ_BUNDLE_DISPLAY_NAME = Ensō
 MOZ_BUNDLE_ID = org.mozilla.ios.Firefox
 CODE_SIGN_ENTITLEMENTS = Client/Entitlements/FirefoxApplication.entitlements
 CHANNEL = release

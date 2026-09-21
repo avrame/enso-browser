@@ -6,7 +6,7 @@
 #include "Release.xcconfig"
 #include "version.xcconfig"
 
-MOZ_BUNDLE_DISPLAY_NAME = Firefox Beta
+MOZ_BUNDLE_DISPLAY_NAME = Ensō Beta
 MOZ_BUNDLE_ID = org.mozilla.ios.FirefoxBeta
 CODE_SIGN_ENTITLEMENTS = Client/Entitlements/FirefoxBetaApplication.entitlements
 CHANNEL = beta

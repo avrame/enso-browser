@@ -1,12 +1,56 @@
 {
-  "images" : [
+  "images": [
     {
-      "filename" : "fxHomeHeaderLogoText.pdf",
-      "idiom" : "universal"
+      "filename": "wordmark.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "wordmark@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "wordmark@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    },
+    {
+      "filename": "wordmark-dark.png",
+      "idiom": "universal",
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "scale": "1x"
+    },
+    {
+      "filename": "wordmark-dark@2x.png",
+      "idiom": "universal",
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "scale": "2x"
+    },
+    {
+      "filename": "wordmark-dark@3x.png",
+      "idiom": "universal",
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "scale": "3x"
     }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
+  "info": {
+    "author": "xcode",
+    "version": 1
   }
 }

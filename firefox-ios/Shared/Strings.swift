@@ -4199,7 +4199,7 @@ extension String {
                 public static let AddressBarSettingsTitle = MZLocalizedString(
                     key: "Settings.Search.Suggest.AddressBarSetting.Title.v124",
                     tableName: "Settings",
-                    value: "Address bar - Firefox Suggest",
+                    value: "Address bar",
                     comment: "In the Search page of the Settings menu, the title for the Firefox Suggest settings section.")
                 public static let ShowNonSponsoredSuggestionsTitle = MZLocalizedString(
                     key: "Settings.Search.Suggest.ShowNonSponsoredSuggestions.Title.v124.v2",

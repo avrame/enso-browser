@@ -18,3 +18,18 @@ import Foundation
 enum EnsoTelemetry {
     static let reportsUsageData = false
 }
+
+/// Whether this browser uses Mozilla's Suggest service.
+///
+/// Firefox Suggest sends what someone types to Mozilla's servers and carries
+/// sponsored results that Mozilla is paid for. Both are reasonable things for
+/// Firefox to do and neither is Ensō's to offer: the suggestions are not ours
+/// to give and the sponsorship is not ours to take, and a browser whose
+/// privacy notice says it collects nothing should not be sending keystrokes
+/// to a company its users have no relationship with.
+///
+/// History, bookmarks and synced tabs still complete as you type. Those never
+/// leave the device.
+enum EnsoSuggest {
+    static let usesMozillaSuggest = false
+}

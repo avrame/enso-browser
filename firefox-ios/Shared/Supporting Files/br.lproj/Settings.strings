@@ -158,7 +158,7 @@
 "Settings.Search.ShowSuggestions.v121" = "Diskouez kinnigoù klask";
 
 /* In the Search page of the Settings menu, the title for the Firefox Suggest settings section. */
-"Settings.Search.Suggest.AddressBarSetting.Title.v124" = "Barrenn chomlec’hioù - Alioù Firefox";
+"Settings.Search.Suggest.AddressBarSetting.Title.v124" = "Address bar";
 
 /* In the search page of the Settings menu, the title for the link to the SUMO Page about Firefox Suggest. */
 "Settings.Search.Suggest.LearnAboutSuggestions.v124" = "Gouzout hiroc’h diwar-benn ar pezh a vez aliet gant Firefox";

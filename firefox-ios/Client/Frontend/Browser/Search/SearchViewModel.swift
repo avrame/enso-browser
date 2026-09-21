@@ -108,13 +108,15 @@ class SearchViewModel: FeatureFlaggable,
 
     /// Whether to show sponsored suggestions from Firefox Suggest.
     var shouldShowSponsoredSuggestions: Bool {
-        return !isPrivate &&
+        return EnsoSuggest.usesMozillaSuggest &&
+        !isPrivate &&
         model.shouldShowSponsoredSuggestions
     }
 
     /// Whether to show non-sponsored suggestions from Firefox Suggest.
     var shouldShowNonSponsoredSuggestions: Bool {
-        return !isPrivate &&
+        return EnsoSuggest.usesMozillaSuggest &&
+        !isPrivate &&
         model.shouldShowFirefoxSuggestions
     }
 

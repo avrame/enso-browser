@@ -314,7 +314,7 @@
 "Settings.Search.ShowSuggestions.v121" = "Monstrar suggestiones de recerca";
 
 /* In the Search page of the Settings menu, the title for the Firefox Suggest settings section. */
-"Settings.Search.Suggest.AddressBarSetting.Title.v124" = "Barra de adresses - Firefox Suggest";
+"Settings.Search.Suggest.AddressBarSetting.Title.v124" = "Address bar";
 
 /* In the search page of the Settings menu, the title for the link to the SUMO Page about Firefox Suggest. */
 "Settings.Search.Suggest.LearnAboutSuggestions.v124" = "Saper plus re Firefox Suggest";

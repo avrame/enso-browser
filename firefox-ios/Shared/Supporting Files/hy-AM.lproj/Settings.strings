@@ -299,7 +299,7 @@
 "Settings.Search.ShowSuggestions.v121" = "Ցուցադրել որոնման առաջարկները";
 
 /* In the Search page of the Settings menu, the title for the Firefox Suggest settings section. */
-"Settings.Search.Suggest.AddressBarSetting.Title.v124" = "Հասցեագոտի․ Firefox Suggest";
+"Settings.Search.Suggest.AddressBarSetting.Title.v124" = "Address bar";
 
 /* In the search page of the Settings menu, the title for the link to the SUMO Page about Firefox Suggest. */
 "Settings.Search.Suggest.LearnAboutSuggestions.v124" = "Իմացեք ավելին Firefox Suggest-ի մասին";

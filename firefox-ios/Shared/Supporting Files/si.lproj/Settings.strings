@@ -143,7 +143,7 @@
 "Settings.Search.ShowSuggestions.v121" = "සෙවුම් යෝජනා පෙන්වන්න";
 
 /* In the Search page of the Settings menu, the title for the Firefox Suggest settings section. */
-"Settings.Search.Suggest.AddressBarSetting.Title.v124" = "ලිපින තීරුව - ෆයර්ෆොක්ස් යෝජනා";
+"Settings.Search.Suggest.AddressBarSetting.Title.v124" = "Address bar";
 
 /* In the search page of the Settings menu, the title for the link to the SUMO Page about Firefox Suggest. */
 "Settings.Search.Suggest.LearnAboutSuggestions.v124" = "ෆයර්ෆොක්ස් යෝජනා ගැන තව දැනගන්න";

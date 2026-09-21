@@ -89,7 +89,8 @@ final class SearchSettingsTableViewController: ThemedTableViewController,
     }
 
     private var isFirefoxSuggestFeatureEnabled: Bool {
-        featureFlagsProvider.isEnabled(.firefoxSuggestFeature)
+        EnsoSuggest.usesMozillaSuggest
+        && featureFlagsProvider.isEnabled(.firefoxSuggestFeature)
         && userPreferences.getPreferenceFor(.firefoxSuggestFeature)
     }
 
@@ -463,7 +464,8 @@ final class SearchSettingsTableViewController: ThemedTableViewController,
     }
 
     private func configureCellForNonSponsoredAction(cell: ThemedSubtitleTableViewCell) {
-        if featureFlagsProvider.isEnabled(.firefoxSuggestFeature)
+        if EnsoSuggest.usesMozillaSuggest
+            && featureFlagsProvider.isEnabled(.firefoxSuggestFeature)
             && userPreferences.getPreferenceFor(.firefoxSuggestFeature) {
             buildSettingWith(
                 prefKey: PrefsKeys.SearchSettings.showFirefoxNonSponsoredSuggestions,
@@ -482,7 +484,8 @@ final class SearchSettingsTableViewController: ThemedTableViewController,
     }
 
     private func configureCellForSponsoredAction(cell: ThemedSubtitleTableViewCell) {
-        if featureFlagsProvider.isEnabled(.firefoxSuggestFeature)
+        if EnsoSuggest.usesMozillaSuggest
+            && featureFlagsProvider.isEnabled(.firefoxSuggestFeature)
             && userPreferences.getPreferenceFor(.firefoxSuggestFeature) {
             buildSettingWith(
                 prefKey: PrefsKeys.SearchSettings.showFirefoxSponsoredSuggestions,

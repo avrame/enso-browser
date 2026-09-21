@@ -106,12 +106,13 @@ class SearchEnginesManager: SearchEnginesManagerProvider {
         shouldShowSyncedTabsSuggestions = prefs.boolForKey(
             PrefsKeys.SearchSettings.showFirefoxSyncedTabsSuggestions
         ) ?? true
-        shouldShowFirefoxSuggestions = prefs.boolForKey(
+        // Mozilla's Suggest service is not used here; see EnsoSuggest.
+        shouldShowFirefoxSuggestions = EnsoSuggest.usesMozillaSuggest && (prefs.boolForKey(
             PrefsKeys.SearchSettings.showFirefoxNonSponsoredSuggestions
-        ) ?? true
-        shouldShowSponsoredSuggestions = prefs.boolForKey(
+        ) ?? true)
+        shouldShowSponsoredSuggestions = EnsoSuggest.usesMozillaSuggest && (prefs.boolForKey(
             PrefsKeys.SearchSettings.showFirefoxSponsoredSuggestions
-        ) ?? true
+        ) ?? true)
         shouldShowPrivateModeFirefoxSuggestions = prefs.boolForKey(
             PrefsKeys.SearchSettings.showPrivateModeFirefoxSuggestions
         ) ?? false

@@ -34,11 +34,53 @@ private func MZLocalizedString(
     value: String?,
     comment: String
 ) -> String {
-    return NSLocalizedString(key,
-                             tableName: tableName,
-                             bundle: Strings.bundle,
-                             value: value ?? "",
-                             comment: comment)
+    return Branding.applied(to: NSLocalizedString(key,
+                                                  tableName: tableName,
+                                                  bundle: Strings.bundle,
+                                                  value: value ?? "",
+                                                  comment: comment),
+                            key: key)
+}
+
+// MARK: - Branding
+
+/// Ensō is a fork, so the strings it inherits say Firefox. They are renamed
+/// here, where every localized string in the app is read, rather than in the
+/// string tables: there are hundreds of locales, and edits there would be
+/// undone by the next merge from upstream.
+///
+/// Mozilla's services keep their own names. A Firefox account is Mozilla's to
+/// call whatever it likes, and this browser only signs in to it — so "Firefox"
+/// followed by one of those service names is left alone.
+public enum Branding {
+    /// Must match `AppName.shortName`, which lives in another module.
+    public static let appName = "Ensō"
+
+    private static let mozillaServices = [
+        "Sync", "Account", "Accounts", "Suggest", "Relay", "Monitor", "Send", "VPN", "Focus", "Klar"
+    ]
+
+    /// Keys whose strings are about Mozilla's account and sync, whatever the
+    /// language. Translations word those differently ("Firefox-Konto"), so the
+    /// key is the only reliable way to leave them alone.
+    private static let serviceKeys = ["fxa", "firefoxaccount", "sync", "suggest", "mozilla"]
+
+    private static let productName: NSRegularExpression? = {
+        let services = mozillaServices.joined(separator: "|")
+        return try? NSRegularExpression(pattern: "Firefox(?![-\\s](?i:\(services)))")
+    }()
+
+    public static func applied(to text: String, key: String) -> String {
+        guard text.contains("Firefox"), let productName else { return text }
+
+        let key = key.lowercased()
+        guard !serviceKeys.contains(where: { key.contains($0) }) else { return text }
+
+        let range = NSRange(text.startIndex..., in: text)
+        return productName.stringByReplacingMatches(in: text,
+                                                    range: range,
+                                                    withTemplate: appName)
+    }
 }
 
 // This file contains all strings for Firefox iOS.

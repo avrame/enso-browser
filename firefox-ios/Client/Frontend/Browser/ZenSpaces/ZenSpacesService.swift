@@ -76,7 +76,13 @@ enum ZenSpacesService {
     }
 
     private static func auth() async throws -> SyncAuth {
-        try await ZenSpacesAuthProvider(accountManager: RustFirefoxAccounts.shared.accountManager).auth()
+        do {
+            return try await ZenSpacesAuthProvider(accountManager: RustFirefoxAccounts.shared.accountManager).auth()
+        } catch ZenSpacesAuthError.notSignedIn, ZenSpacesAuthError.needsReauthentication {
+            // Nothing has gone wrong: there is simply no account to read
+            // spaces from, and the sheet offers a way in.
+            throw SpacesSignInRequired()
+        }
     }
 }
 

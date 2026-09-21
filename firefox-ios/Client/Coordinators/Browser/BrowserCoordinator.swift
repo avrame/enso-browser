@@ -609,6 +609,11 @@ final class BrowserCoordinator: BaseCoordinator,
                 if let selected {
                     ZenSpacesService.pinnedTabLinks.link(pinned.tabId, to: selected.tabUUID)
                 }
+            },
+            onSignIn: { [weak self] in
+                self?.router.dismiss(animated: true) {
+                    self?.presentZenSpacesSignIn()
+                }
             })
         let controller = UIHostingController(rootView: sheet)
         if controller.shouldUseiPadSetup(), let sourceView {
@@ -623,6 +628,20 @@ final class BrowserCoordinator: BaseCoordinator,
             controller.sheetPresentationController?.prefersGrabberVisible = true
         }
         present(controller)
+    }
+
+    /// The account sign-in, reached from the spaces sheet when there is no
+    /// account to read spaces from. It is the app's own Mozilla account flow,
+    /// not a form of ours: the sign-in is Mozilla's and runs on their pages.
+    private func presentZenSpacesSignIn() {
+        let params = FxALaunchParams(entrypoint: .homepanel, query: [:])
+        let signIn = FirefoxAccountSignInViewController(profile: profile,
+                                                        parentType: .settings,
+                                                        deepLinkParams: params,
+                                                        windowUUID: windowUUID)
+        let done = UIAction { [weak self] _ in self?.router.dismiss(animated: true) }
+        signIn.navigationItem.leftBarButtonItem = UIBarButtonItem(systemItem: .close, primaryAction: done)
+        present(UINavigationController(rootViewController: signIn))
     }
 
     /// Only a normal tab showing a web page can be pinned into Zen.

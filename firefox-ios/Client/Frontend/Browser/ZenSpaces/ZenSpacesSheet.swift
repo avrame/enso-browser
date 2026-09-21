@@ -85,6 +85,8 @@ struct ZenSpacesSheet: View {
     let onOpen: (TabRecord) -> Void
     /// Called with the new pinned tab once the server has accepted it.
     let onPinned: (TabRecord) -> Void
+    /// Opens the account sign-in, for when there is no account to read from.
+    var onSignIn: (() -> Void)?
 
     @AppStorage("zenSpaces.selectedSpace") private var selectedSpace = ""
     @State private var renaming: RenameRequest?
@@ -375,6 +377,8 @@ struct ZenSpacesSheet: View {
             Spacer()
             if store.status == .refreshing {
                 ProgressView()
+            } else if store.needsSignIn {
+                signedOutState
             } else {
                 Image(systemName: "square.stack.3d.up")
                     .font(.largeTitle)
@@ -390,6 +394,27 @@ struct ZenSpacesSheet: View {
             Spacer()
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// Spaces live in the account, so without one there is nothing to show
+    /// and nothing to fix - only a way in.
+    @ViewBuilder
+    private var signedOutState: some View {
+        Image(systemName: "person.crop.circle.badge.plus")
+            .font(.largeTitle)
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
+        Text("Sign in to see your spaces").font(.headline)
+        Text("Your spaces sync through your Mozilla account, the same one Zen uses.")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 32)
+        if let onSignIn {
+            Button("Sign In", action: onSignIn)
+                .buttonStyle(.borderedProminent)
+                .padding(.top, 4)
+        }
     }
 
     @ViewBuilder

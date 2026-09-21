@@ -81,6 +81,9 @@ public final class SpacesStore: ObservableObject {
     @Published public private(set) var snapshot: SpacesSnapshot?
     @Published public private(set) var fetchedAt: Date?
     @Published public private(set) var status: Status = .idle
+    /// Set when the last fetch failed only because there is no account to
+    /// read from, which the UI answers with a way in rather than an error.
+    @Published public private(set) var needsSignIn = false
 
     public typealias Rename = @MainActor (_ target: RenameTarget, _ name: String) async throws -> SpacesRecord
     public typealias Pin = @MainActor (_ page: PinnablePage, _ spaceUUID: String) async throws -> PinnedTab
@@ -143,8 +146,13 @@ public final class SpacesStore: ObservableObject {
             snapshot = SpacesSnapshot(records: records)
             fetchedAt = result.fetchedAt
             status = .idle
+            needsSignIn = false
             try? cache.save(records, fetchedAt: result.fetchedAt)
+        } catch is SpacesSignInRequired {
+            needsSignIn = true
+            status = .idle
         } catch {
+            needsSignIn = false
             status = .failed(String(describing: error))
         }
     }

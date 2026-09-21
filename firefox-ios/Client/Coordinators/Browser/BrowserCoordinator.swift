@@ -617,7 +617,9 @@ final class BrowserCoordinator: BaseCoordinator,
             controller.popoverPresentationController?.sourceView = sourceView
             controller.popoverPresentationController?.canOverlapSourceViewRect = false
         } else {
+            // Opens full height; the medium detent is still there to drag down to.
             controller.sheetPresentationController?.detents = [.medium(), .large()]
+            controller.sheetPresentationController?.selectedDetentIdentifier = .large
             controller.sheetPresentationController?.prefersGrabberVisible = true
         }
         present(controller)

@@ -93,14 +93,18 @@ class TelemetryWrapper: TelemetryWrapperProtocol,
         migratePathComponentInDocumentsDirectory("MozTelemetry-Default-mobile-event", to: .cachesDirectory)
         migratePathComponentInDocumentsDirectory("eventArray-MozTelemetry-Default-mobile-event.json", to: .cachesDirectory)
 
-        let sendUsageData = profile.prefs.boolForKey(AppConstants.prefSendUsageData) ?? true
+        // Nothing is reported under Ensō's name; see EnsoTelemetry.
+        let sendUsageData = EnsoTelemetry.reportsUsageData
+            && (profile.prefs.boolForKey(AppConstants.prefSendUsageData) ?? true)
 
         // Initialize Glean
         initGlean(profile, sendUsageData: sendUsageData)
     }
 
-    /// Never follows `prefSendUsageData`: `usage-reporting` is `follows_collection_enabled: false`.
+    /// Never follows `prefSendUsageData`: `usage-reporting` is `follows_collection_enabled: false`,
+    /// which is exactly why EnsoTelemetry has to stop it separately.
     func shouldSendDailyUsagePing(prefs: Prefs) -> Bool {
+        guard EnsoTelemetry.reportsUsageData else { return false }
         return prefs.boolForKey(AppConstants.prefSendDailyUsagePing) ?? AppConstants.defaultSendDailyUsagePing
     }
 

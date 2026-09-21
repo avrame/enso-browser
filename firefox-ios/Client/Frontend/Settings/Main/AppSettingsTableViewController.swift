@@ -489,13 +489,16 @@ class AppSettingsTableViewController: SettingsTableViewController,
             return []
         }
 
-        supportSettings.append(contentsOf: [
-            sendTechnicalDataSetting,
-            studiesToggleSetting,
-            rolloutsToggleSetting,
-            sendDailyUsagePingSetting,
-            sendCrashReportsSetting
-        ])
+        // Switches for data collection that does not happen would be a lie.
+        if EnsoTelemetry.reportsUsageData {
+            supportSettings.append(contentsOf: [
+                sendTechnicalDataSetting,
+                studiesToggleSetting,
+                rolloutsToggleSetting,
+                sendDailyUsagePingSetting,
+                sendCrashReportsSetting
+            ])
+        }
 
         supportSettings.append(contentsOf: [
             OpenSupportPageSetting(delegate: settingsDelegate,

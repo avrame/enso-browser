@@ -39,12 +39,27 @@ struct TermsOfServiceManager: FeatureFlaggable, Sendable {
     }
 
     func shouldSendTechnicalData(telemetryValue: Bool, studiesValue: Bool) {
-        DefaultGleanWrapper().setUpload(isEnabled: telemetryValue)
-        Experiments.setStudiesSetting(studiesValue)
-        Experiments.setTelemetrySetting(telemetryValue)
+        let telemetry = EnsoTelemetry.reportsUsageData && telemetryValue
+        DefaultGleanWrapper().setUpload(isEnabled: telemetry)
+        Experiments.setStudiesSetting(EnsoTelemetry.reportsUsageData && studiesValue)
+        Experiments.setTelemetrySetting(telemetry)
     }
 
     // MARK: - Terms of Use Configuration
+
+    /// The line about sending data to Mozilla belongs in onboarding only while
+    /// that is true of this browser; see EnsoTelemetry.
+    private static func manageDataCollectionLinks(manageAgreement: String, manageLink: String) -> [EmbeddedLink] {
+        guard EnsoTelemetry.reportsUsageData else { return [] }
+        return [
+            EmbeddedLink(
+                fullText: manageAgreement,
+                linkText: manageLink,
+                action: .openManageSettings,
+                accessibilityIdentifier: AccessibilityIdentifiers.TermsOfService.manageDataCollectionAgreement
+            )
+        ]
+    }
 
     static var brandRefreshTermsOfUseConfiguration: OnboardingKitCardInfoModel {
         let termsOfUseLink = String(
@@ -98,13 +113,7 @@ struct TermsOfServiceManager: FeatureFlaggable, Sendable {
                     action: .openPrivacyNotice,
                     accessibilityIdentifier: AccessibilityIdentifiers.TermsOfService.privacyNoticeAgreement
                 ),
-                EmbeddedLink(
-                    fullText: manageAgreement,
-                    linkText: manageLink,
-                    action: .openManageSettings,
-                    accessibilityIdentifier: AccessibilityIdentifiers.TermsOfService.manageDataCollectionAgreement
-                )
-            ]
+            ] + manageDataCollectionLinks(manageAgreement: manageAgreement, manageLink: manageLink)
         )
     }
 }

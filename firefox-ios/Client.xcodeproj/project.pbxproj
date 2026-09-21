@@ -2251,6 +2251,7 @@
 		EBC4869E2195F58300CDA48D /* AboutHomeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC4869B2195F58200CDA48D /* AboutHomeHandler.swift */; };
 		EBE26B57220C959D00D1D99A /* BrowserViewController+ToolBarActionMenuDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBE26B4E220C959D00D1D99A /* BrowserViewController+ToolBarActionMenuDelegate.swift */; };
 		EBF47E701F7979DF00899189 /* TelemetryWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBF47E6F1F7979DF00899189 /* TelemetryWrapper.swift */; };
+		2E4E00000000000000000006 /* EnsoTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4E00000000000000000005 /* EnsoTelemetry.swift */; };
 		EBFDB790211C83A5005CCA2F /* BrowserViewController+FindInPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFDB787211C83A5005CCA2F /* BrowserViewController+FindInPage.swift */; };
 		EC0FBD1F300530E9005CCA62 /* FolderSectionHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC0FBD1E300530E3005CCA62 /* FolderSectionHeaderView.swift */; };
 		EC0FBD213005311A005CCA62 /* FolderTreeCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC0FBD2030053117005CCA62 /* FolderTreeCell.swift */; };
@@ -12092,6 +12093,7 @@
 		EBC4869B2195F58200CDA48D /* AboutHomeHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AboutHomeHandler.swift; sourceTree = "<group>"; };
 		EBE26B4E220C959D00D1D99A /* BrowserViewController+ToolBarActionMenuDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "BrowserViewController+ToolBarActionMenuDelegate.swift"; sourceTree = "<group>"; };
 		EBF47E6F1F7979DF00899189 /* TelemetryWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryWrapper.swift; sourceTree = "<group>"; };
+		2E4E00000000000000000005 /* EnsoTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnsoTelemetry.swift; sourceTree = "<group>"; };
 		EBFDB787211C83A5005CCA2F /* BrowserViewController+FindInPage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "BrowserViewController+FindInPage.swift"; sourceTree = "<group>"; };
 		EC094E459CE942F341423C1B /* es-CL */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "es-CL"; path = "es-CL.lproj/3DTouchActions.strings"; sourceTree = "<group>"; };
 		EC0FBD1E300530E3005CCA62 /* FolderSectionHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderSectionHeaderView.swift; sourceTree = "<group>"; };
@@ -17318,6 +17320,7 @@
 				61CEFF5D2DA8BC78000B88A7 /* TabsPanelTelemetry.swift */,
 				8AD08D1427E9198E00B8E907 /* TabsTelemetry.swift */,
 				8A95FF632B1E969E00AC303D /* TelemetryContextualIdentifier.swift */,
+				2E4E00000000000000000005 /* EnsoTelemetry.swift */,
 				EBF47E6F1F7979DF00899189 /* TelemetryWrapper.swift */,
 				ED232E9F2DFA3BF00046DA47 /* UserTelemetry.swift */,
 				8A0727452B4890B50071BB9F /* WebviewTelemetry.swift */,
@@ -19933,6 +19936,7 @@
 				8A0A1BA02B2200FD00E8706F /* PrivateHomepageViewController.swift in Sources */,
 				C84655E62887398700861B4A /* WallpaperCollection.swift in Sources */,
 				EBF47E701F7979DF00899189 /* TelemetryWrapper.swift in Sources */,
+				2E4E00000000000000000006 /* EnsoTelemetry.swift in Sources */,
 				31ADB5DA1E58CEC300E87909 /* ClipboardBarDisplayHandler.swift in Sources */,
 				8AD1980F27BEB3F100D64B0E /* PhotonActionSheetViewModel.swift in Sources */,
 				8A855C032D1EE9EF00C1A2F3 /* ContextMenuCoordinator.swift in Sources */,

@@ -7,6 +7,12 @@ import WebKit
 
 /// The browser window as extensions see it: the normal tabs of one tab
 /// manager. Private tabs are deliberately invisible to extensions.
+///
+/// There is one window, not one per space, because spaces do not own tabs
+/// yet: the tab list is flat, and a tab opened from a space is only linked
+/// back to its pinned entry. A window per space would describe a structure
+/// the user cannot see or switch between. See ZEN-EXTENSIONS.md for when to
+/// revisit this.
 @MainActor
 final class ZenExtensionWindow: NSObject, WKWebExtensionWindow {
     private(set) weak var tabManager: TabManager?

@@ -1,22 +1,22 @@
 {
-  "images" : [
+  "images": [
     {
-      "filename" : "midday-light.pdf",
-      "idiom" : "universal"
+      "filename": "midday_light.pdf",
+      "idiom": "universal"
     },
     {
-      "appearances" : [
+      "filename": "midday_dark.pdf",
+      "idiom": "universal",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "filename" : "midday-dark.pdf",
-      "idiom" : "universal"
+      ]
     }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
+  "info": {
+    "author": "xcode",
+    "version": 1
   }
 }

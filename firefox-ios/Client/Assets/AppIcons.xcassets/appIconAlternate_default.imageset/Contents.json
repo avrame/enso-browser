@@ -1,12 +1,22 @@
 {
-  "images" : [
+  "images": [
     {
-      "filename" : "default-no-bg.pdf",
-      "idiom" : "universal"
+      "filename": "default-light.pdf",
+      "idiom": "universal"
+    },
+    {
+      "filename": "default-dark.pdf",
+      "idiom": "universal",
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ]
     }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
+  "info": {
+    "author": "xcode",
+    "version": 1
   }
 }

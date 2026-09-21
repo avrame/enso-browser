@@ -66,7 +66,13 @@ final class TermsOfUseLinkViewController: UIViewController,
         applyTheme()
 
         observeEstimatedProgress()
-        webView.load(URLRequest(url: url))
+        // Ensō's terms and privacy notice are internal pages, which only load
+        // from a privileged request.
+        if InternalURL.isValid(url: url) {
+            webView.load(PrivilegedRequest(url: url) as URLRequest)
+        } else {
+            webView.load(URLRequest(url: url))
+        }
     }
 
     private func setupViews() {

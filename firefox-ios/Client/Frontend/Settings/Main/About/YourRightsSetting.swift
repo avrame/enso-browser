@@ -13,7 +13,7 @@ class YourRightsSetting: Setting {
     }
 
     override var url: URL? {
-        return URL(string: "https://www.mozilla.org/about/legal/terms/firefox/")
+        return URL(string: EnsoLegal.termsOfUse)
     }
 
     override var accessibilityIdentifier: String? {

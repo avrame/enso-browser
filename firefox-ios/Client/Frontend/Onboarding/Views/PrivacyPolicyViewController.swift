@@ -48,7 +48,13 @@ class PrivacyPolicyViewController: UIViewController, Themeable {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.translatesAutoresizingMaskIntoConstraints = false
         webView.navigationDelegate = self
-        webView.load(URLRequest(url: url))
+        // Ensō's terms and privacy notice are internal pages, which only load
+        // from a privileged request.
+        if InternalURL.isValid(url: url) {
+            webView.load(PrivilegedRequest(url: url) as URLRequest)
+        } else {
+            webView.load(URLRequest(url: url))
+        }
 
         view.backgroundColor = .systemBackground
         view.addSubview(webView)

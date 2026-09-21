@@ -12,8 +12,8 @@ import Shared
 /// They ship as files so the documents someone agreed to are the ones in the
 /// build they are running, and so they work with no network.
 enum EnsoLegal {
-    static var termsOfUse: String { "\(InternalURL.baseUrl)/\(TermsHandler.path)" }
-    static var privacyNotice: String { "\(InternalURL.baseUrl)/\(PrivacyHandler.path)" }
+    static var termsOfUse: String { SupportUtils.URLForTermsOfUse?.absoluteString ?? "" }
+    static var privacyNotice: String { SupportUtils.URLForPrivacyNotice?.absoluteString ?? "" }
 }
 
 private func page(_ resource: String, for request: URLRequest) -> (URLResponse, Data)? {

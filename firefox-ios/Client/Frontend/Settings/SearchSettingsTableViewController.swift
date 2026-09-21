@@ -473,7 +473,7 @@ final class SearchSettingsTableViewController: ThemedTableViewController,
                 ),
                 statusText: String.localizedStringWithFormat(
                     .Settings.Search.Suggest.ShowNonSponsoredSuggestionsDescription,
-                    AppName.shortName.rawValue
+                    MozillaName.shortName.rawValue
                 ),
                 cell: cell,
                 selector: #selector(didToggleEnableNonSponsoredSuggestions)
@@ -492,7 +492,7 @@ final class SearchSettingsTableViewController: ThemedTableViewController,
                 ),
                 statusText: String.localizedStringWithFormat(
                     .Settings.Search.Suggest.ShowSponsoredSuggestionsDescription,
-                    AppName.shortName.rawValue
+                    MozillaName.shortName.rawValue
                 ),
                 cell: cell,
                 selector: #selector(didToggleEnableSponsoredSuggestions)
@@ -548,7 +548,10 @@ final class SearchSettingsTableViewController: ThemedTableViewController,
         case .searchEnginesSuggestions:
             return SearchSuggestItem.allCases.count
         case .firefoxSuggestSettings:
-            return isFirefoxSuggestFeatureEnabled ? FirefoxSuggestItem.allCases.count : 3
+            // The last row linked to a Mozilla support article, which Ensō has
+            // no equivalent for; without a destination it is dropped.
+            let rows = FirefoxSuggestItem.allCases.count - 1
+            return isFirefoxSuggestFeatureEnabled ? rows : 3
         }
     }
 

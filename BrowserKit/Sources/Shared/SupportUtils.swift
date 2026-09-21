@@ -8,14 +8,18 @@ import UIKit
 
 /// Utility functions related to SUMO and Webcompat
 public struct SupportUtils {
+    /// Mozilla's support pages document Firefox, not Ensō, and being sent
+    /// there implies a support relationship that does not exist. Until Ensō
+    /// has pages of its own, these are nil and the links that use them are
+    /// simply not shown.
     public static var URLForPrivateBrowsingLearnMore: URL? {
-        // Returns the predefined URL associated to private homepage message card learn more action.
-        return URL(string: "https://support.mozilla.org/en-US/kb/common-myths-about-private-browsing?as=u&utm_source=inproduct")
+        return nil
     }
 
+    /// Where Ensō is actually developed, and where a problem with it can
+    /// usefully be reported.
     public static var URLForGetHelp: URL? {
-        // Returns the predefined URL associated to the menu's Get Help button action.
-        return URL(string: "https://support.mozilla.org/products/ios")
+        return URL(string: "https://github.com/avrame/firefox-ios/issues")
     }
 
     public static var URLForPocketLearnMore: URL? {
@@ -23,20 +27,22 @@ public struct SupportUtils {
         return URL(string: "https://www.mozilla.org/firefox/pocket/?utm_source=ff_ios")
     }
 
+    /// Ensō's own documents, served from the app. Mozilla's legal pages
+    /// describe Firefox and are not this browser's to present as its own.
     public static var URLForTermsOfUse: URL? {
-        return URL(string: "https://www.mozilla.org/about/legal/terms/firefox/")
+        return URL(string: "\(InternalURL.baseUrl)/about/terms")
     }
 
     public static var URLForPrivacyNotice: URL? {
-        return URL(string: "https://www.mozilla.org/privacy/firefox/")
+        return URL(string: "\(InternalURL.baseUrl)/about/privacy")
     }
 
     public static var URLForUpdatedPrivacyNotice: URL? {
-        return URL(string: "https://www.mozilla.org/privacy/firefox/next/")
+        return URLForPrivacyNotice
     }
 
     public static var URLForUpdatedPrivacyNoticeDiff: URL? {
-        return URL(string: "https://www.mozilla.org/privacy/firefox/update/")
+        return URLForPrivacyNotice
     }
 
     public static var URLForRelayAccountManagement: URL? {
@@ -48,26 +54,23 @@ public struct SupportUtils {
     }
 
     public static var URLForConnectionNotSecureLearnMore: URL? {
-        return URL(string: "https://support.mozilla.org/en-US/kb/what-does-your-connection-is-not-secure-mean")
+        return nil
     }
 
+    /// A SUMO topic is an article about Firefox on Mozilla's site. Ensō has
+    /// no equivalent yet, so callers get nothing and hide their link.
     public static func URLForTopic(_ topic: String, useMobilePath: Bool = true) -> URL? {
-        // Construct a NSURL pointing to a specific topic on SUMO. The topic should be a non-escaped string. It will
-        // be properly escaped by this function.
-        //
-        // The resulting NSURL will include the app version, operating system and locale code. For example, a topic
-        // "cheese" will be turned into a link that looks like https://support.mozilla.org/1/mobile/2.0/iOS/en-US/cheese
-        guard let escapedTopic = topic.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-              let languageIdentifier = Locale.preferredLanguages.first
-        else {
-            return nil
-        }
-        let productPath = useMobilePath ? "mobile" : "firefox"
-        return URL(string: "https://support.mozilla.org/1/\(productPath)/\(AppInfo.appVersion)/iOS/\(languageIdentifier)/\(escapedTopic)")
+        return nil
     }
 
+    /// The campaign parameters were for Mozilla's analytics; Ensō's notice is
+    /// a page in the app, so they have nothing to attach to.
     public static func URLForPrivacyNotice(source: String, campaign: String, content: String?) -> URL? {
-        let defaultURL = URL(string: "https://www.mozilla.org/privacy/firefox")
+        return URLForPrivacyNotice
+    }
+
+    private static func legacyPrivacyNotice(source: String, campaign: String, content: String?) -> URL? {
+        let defaultURL = URLForPrivacyNotice
 
         guard let languageIdentifier = Locale.preferredLanguages.first else {
             return defaultURL

@@ -1,74 +1,29 @@
 {
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
+  "info": {
+    "author": "xcode",
+    "version": 1
   },
-  "properties" : {
-    "grid-size" : "regular"
+  "properties": {
+    "grid-size": "regular"
   },
-  "stickers" : [
+  "stickers": [
     {
-      "filename" : "1.sticker"
+      "filename": "enso-ink.sticker"
     },
     {
-      "filename" : "2.sticker"
+      "filename": "enso-night.sticker"
     },
     {
-      "filename" : "3.sticker"
+      "filename": "enso-seal.sticker"
     },
     {
-      "filename" : "4.sticker"
+      "filename": "enso-wet.sticker"
     },
     {
-      "filename" : "5.sticker"
+      "filename": "enso-fast.sticker"
     },
     {
-      "filename" : "6.sticker"
-    },
-    {
-      "filename" : "7.sticker"
-    },
-    {
-      "filename" : "8.sticker"
-    },
-    {
-      "filename" : "9.sticker"
-    },
-    {
-      "filename" : "10.sticker"
-    },
-    {
-      "filename" : "11.sticker"
-    },
-    {
-      "filename" : "12.sticker"
-    },
-    {
-      "filename" : "13.sticker"
-    },
-    {
-      "filename" : "14.sticker"
-    },
-    {
-      "filename" : "15.sticker"
-    },
-    {
-      "filename" : "16.sticker"
-    },
-    {
-      "filename" : "17.sticker"
-    },
-    {
-      "filename" : "18.sticker"
-    },
-    {
-      "filename" : "19.sticker"
-    },
-    {
-      "filename" : "20.sticker"
-    },
-    {
-      "filename" : "21.sticker"
+      "filename": "enso-vermilion.sticker"
     }
   ]
 }

@@ -1,0 +1,41 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+// Ensō's own build. The inherited Fennec configuration is Mozilla's developer
+// channel: it signs manually against Mozilla's team and claims Mozilla's
+// bundle identifier, neither of which anyone outside Mozilla can provision, so
+// Xcode refuses to build it here. This one carries our own identity and lets
+// Xcode pick the signing certificate.
+
+#include "Common.xcconfig"
+#include "Debug.xcconfig"
+#include "version.xcconfig"
+
+INFOPLIST_FILE = Client/Info.plist
+
+// The app group and the keychain access group are both derived from this at
+// runtime, in AppInfo, so this line is the one that has to change - see
+// EnsoApplication.entitlements, which has to agree with it.
+MOZ_BUNDLE_ID = app.enso.browser
+MOZ_BUNDLE_DISPLAY_NAME = Ensō
+MOZ_TODAY_WIDGET_SEARCH_DISPLAY_NAME = Ensō - Search
+
+// Ours, not Firefox's: two apps cannot both answer firefox://.
+MOZ_PUBLIC_URL_SCHEME = enso
+MOZ_INTERNAL_URL_SCHEME = enso
+
+CODE_SIGN_ENTITLEMENTS = Client/Entitlements/EnsoApplication.entitlements
+
+// Automatic, with no team written down: Xcode asks once in Signing &
+// Capabilities and records whichever team the developer actually has.
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = Apple Development
+DEVELOPMENT_TEAM =
+
+INCLUDE_SETTINGS_BUNDLE = YES
+CHANNEL = developer
+OTHER_SWIFT_FLAGS = $(OTHER_SWIFT_FLAGS_common) -DMOZ_CHANNEL_$(CHANNEL)
+OTHER_LDFLAGS = -ObjC -fprofile-instr-generate -Xlinker -no_application_extension
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+ENABLE_NS_ASSERTIONS = YES

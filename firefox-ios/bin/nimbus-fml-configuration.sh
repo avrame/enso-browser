@@ -13,6 +13,9 @@ case "${CONFIGURATION}" in
     Debug)
         CHANNEL="developer"
         ;;
+    Enso)
+        CHANNEL="developer"
+        ;;
     Fennec_Testing)
         CHANNEL="developer"
         ;;

@@ -23,7 +23,22 @@ open class UserAgent {
         } else {
             versionStr = "dev"
         }
-        return "\(prefix)/\(versionStr) (\(DeviceInfo.deviceModel()); iPhone OS \(UIDeviceDetails.systemVersion)) (\(AppInfo.displayName))"
+        return "\(prefix)/\(versionStr) (\(DeviceInfo.deviceModel()); iPhone OS \(UIDeviceDetails.systemVersion)) (\(headerSafe(AppInfo.displayName)))"
+    }
+
+    /// HTTP header values are ASCII, and "Ensō" is not: the macron made the
+    /// Rust networking stack reject every request it was attached to - signing
+    /// in, syncing, and fetching the tracker lists all failed before leaving
+    /// the device. Folded to the nearest ASCII rather than dropped, so the
+    /// name still reads as ours.
+    ///
+    /// This is only the user agent the app sends to its own services. The one
+    /// sites see is built separately, in UserAgentBuilder, and is untouched.
+    static func headerSafe(_ value: String) -> String {
+        let folded = value.folding(options: [.diacriticInsensitive, .widthInsensitive],
+                                   locale: Locale(identifier: "en_US_POSIX"))
+        let scalars = folded.unicodeScalars.filter { $0.isASCII && $0.value > 0x1F && $0.value != 0x7F }
+        return String(String.UnicodeScalarView(scalars))
     }
 
     public static var syncUserAgent: String {

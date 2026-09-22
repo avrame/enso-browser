@@ -12413,6 +12413,7 @@
 		2E4E00000000000000000003 /* ZenSpaces */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ZenSpaces; sourceTree = "<group>"; };
 		2E4E00000000000000000004 /* ZenExtensions */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ZenExtensions; sourceTree = "<group>"; };
 		2E4E00000000000000000007 /* ZenLegal */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ZenLegal; sourceTree = "<group>"; };
+		2E4E00000000000000000008 /* ZenTipJar */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ZenTipJar; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -16691,6 +16692,7 @@
 				2E4E00000000000000000003 /* ZenSpaces */,
 				2E4E00000000000000000004 /* ZenExtensions */,
 				2E4E00000000000000000007 /* ZenLegal */,
+				2E4E00000000000000000008 /* ZenTipJar */,
 				81A3F6EE2C2DAED500BDD86B /* MainMenu */,
 				1D7B78952ADF324E0011E9F2 /* Event Queue */,
 				8A1E3BE428CBBF1E003388C4 /* SearchEngines */,
@@ -18440,6 +18442,7 @@
 				2E4E00000000000000000003 /* ZenSpaces */,
 				2E4E00000000000000000004 /* ZenExtensions */,
 				2E4E00000000000000000007 /* ZenLegal */,
+				2E4E00000000000000000008 /* ZenTipJar */,
 			);
 			name = Client;
 			packageProductDependencies = (

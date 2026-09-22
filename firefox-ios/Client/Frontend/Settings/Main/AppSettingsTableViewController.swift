@@ -512,6 +512,7 @@ class AppSettingsTableViewController: SettingsTableViewController,
 
     private func getAboutSettings() -> [SettingSection] {
         let aboutSettings = [
+            TipJarSetting(),
             AppStoreReviewSetting(settingsDelegate: parentCoordinator),
             VersionSetting(settingsDelegate: self),
             LicenseAndAcknowledgementsSetting(settingsDelegate: parentCoordinator),

@@ -858,7 +858,8 @@
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
-      allowLocationSimulation = "YES">
+      allowLocationSimulation = "YES"
+      storeKitConfigurationFileReference = "../../../Client/Frontend/Browser/ZenTipJar/TipJar.storekit">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference

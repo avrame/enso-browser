@@ -14,6 +14,12 @@
 
 INFOPLIST_FILE = Client/Info.plist
 
+// Ensō's own version, overriding the Firefox one that version.xcconfig
+// carries. Set here rather than there so upstream can keep bumping that file
+// without conflicting every sync. The version sites are told about is separate
+// and stays Firefox's - see UserAgent.firefoxCompatVersion.
+APP_VERSION = 0.1.0
+
 // The app group and the keychain access group are both derived from this at
 // runtime, in AppInfo, so this line is the one that has to change - see
 // EnsoApplication.entitlements, which has to agree with it.

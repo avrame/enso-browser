@@ -9,7 +9,13 @@ import UIKit
 open class UserAgent {
     public static let uaBitSafari = "Safari/604.1"
     public static let uaBitMobile = "Mobile/15E148"
-    public static let uaBitFx = "FxiOS/\(AppInfo.appVersion)"
+    /// The Firefox version sites are told about, which is deliberately not
+    /// Ensō's own version. Sites gate features on the FxiOS number, and
+    /// announcing 0.1.0 would have them treat a current engine as an ancient
+    /// one. Bump this when syncing from upstream, to match version.xcconfig.
+    public static let firefoxCompatVersion = "157.1"
+
+    public static let uaBitFx = "FxiOS/\(firefoxCompatVersion)"
     public static let product = "Mozilla/5.0"
     public static let platform = "AppleWebKit/605.1.15"
     public static let platformDetails = "(KHTML, like Gecko)"
@@ -213,7 +219,7 @@ public struct UserAgentBuilder {
             systemInfo: "(\(device); \(system) OS 18_7 like Mac OS X)",
             platform: UserAgent.platform,
             platformDetails: UserAgent.platformDetails,
-            extensions: "FxiOS/\(AppInfo.appVersion) \(UserAgent.uaBitMobile) \(UserAgent.uaBitSafari)")
+            extensions: "\(UserAgent.uaBitFx) \(UserAgent.uaBitMobile) \(UserAgent.uaBitSafari)")
     }
 
     public static func defaultDesktopUserAgent() -> UserAgentBuilder {

@@ -328,6 +328,7 @@ class AppSettingsTableViewController: SettingsTableViewController,
         settings += getDefaultBrowserSetting()
         settings += getAccountSetting()
         settings += getGeneralSettings()
+        settings += getTipJarSetting()
         settings += getPrivacySettings()
         settings += getSupportSettings()
         settings += getAboutSettings()
@@ -424,6 +425,10 @@ class AppSettingsTableViewController: SettingsTableViewController,
                                children: generalSettings)]
     }
 
+    private func getTipJarSetting() -> [SettingSection] {
+        return [SettingSection(children: [TipJarSetting(title: NSAttributedString(string: "Leave a Tip"))])]
+    }
+
     private func getPrivacySettings() -> [SettingSection] {
         var privacySettings = [Setting]()
 
@@ -513,7 +518,6 @@ class AppSettingsTableViewController: SettingsTableViewController,
 
     private func getAboutSettings() -> [SettingSection] {
         let aboutSettings = [
-            TipJarSetting(),
             AppStoreReviewSetting(settingsDelegate: parentCoordinator),
             VersionSetting(settingsDelegate: self),
             LicenseAndAcknowledgementsSetting(settingsDelegate: parentCoordinator),

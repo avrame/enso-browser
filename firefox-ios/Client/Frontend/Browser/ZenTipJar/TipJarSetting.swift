@@ -5,11 +5,17 @@
 import SwiftUI
 import UIKit
 
+/// Sits in its own section rather than among the legal links at the bottom of
+/// About, where nobody found it. One row with one line under it is as loud as
+/// asking for money should get in a browser that promises not to nag.
 class TipJarSetting: Setting {
-    override var title: NSAttributedString? {
+    override var accessoryView: UIImageView? {
         guard let theme else { return nil }
-        return NSAttributedString(string: "Leave a Tip",
-                                  attributes: [.foregroundColor: theme.colors.textPrimary])
+        return SettingDisclosureUtility.buildDisclosureIndicator(theme: theme)
+    }
+
+    override var status: NSAttributedString? {
+        return NSAttributedString(string: "Ensō is free. If it's useful, buy me a coffee!")
     }
 
     override var accessibilityIdentifier: String? { return "TipJar.Setting" }

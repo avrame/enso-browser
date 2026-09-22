@@ -181,39 +181,61 @@ class FxAWebViewModel {
     }
 
     func setupFirstPage(completion: @escaping (URLRequest, TelemetryWrapper.EventMethod?) -> Void) {
-        if let accountManager = profile.rustFxA.accountManager {
-            let entrypoint = self.deepLinkParams.entrypoint.rawValue
+        guard let accountManager = profile.rustFxA.accountManager else {
+            logger.log("No account manager to open a sign-in page with",
+                       level: .warning,
+                       category: .sync)
+            return
+        }
+        let entrypoint = deepLinkParams.entrypoint.rawValue
+
+        switch pageType {
+        case .emailLoginFlow:
+            accountManager.beginAuthentication(
+                entrypoint: "email_\(entrypoint)",
+                scopes: [OAuthScope.profile, OAuthScope.oldSync]
+            ) { [weak self] result in
+                guard let self = self else { return }
+
+                switch result {
+                case .success(var url):
+                    if self.profile.prefs.boolForKey(PrefsKeys.KeyUseReactFxA) ?? false {
+                        url = url.withQueryParams([
+                            URLQueryItem(name: "forceExperiment", value: "generalizedReactApp"),
+                            URLQueryItem(name: "forceExperimentGroup", value: "react")
+                        ])
+                    }
+                    self.baseURL = url
+                    completion(self.makeRequest(url), .emailLogin)
+                case .failure(let error):
+                    self.logger.log("Could not begin the email sign-in flow",
+                                    level: .warning,
+                                    category: .sync,
+                                    description: String(describing: error))
+                }
+            }
+
+        case let .qrCode(url), let .pairingV2(url):
+            baseURL = url
+            completion(makeRequest(url), .qrPairing)
+
+        case .settingsPage:
+            // Only this one is about an account that already exists, so only
+            // this one asks for its management URL. Asking first, for every
+            // page, left the sign-in flows waiting on a call that cannot
+            // succeed until someone has signed in.
             accountManager.getManageAccountURL(entrypoint: "ios_settings_\(entrypoint)") { [weak self] result in
                 guard let self = self else { return }
 
-                // Handle authentication with either the QR code login flow, email login flow, or settings page flow
-                switch self.pageType {
-                case .emailLoginFlow:
-                    accountManager.beginAuthentication(
-                        entrypoint: "email_\(entrypoint)",
-                        scopes: [OAuthScope.profile, OAuthScope.oldSync]
-                    ) { [weak self] result in
-                        guard let self = self else { return }
-
-                        if case .success(var url) = result {
-                            if self.profile.prefs.boolForKey(PrefsKeys.KeyUseReactFxA) ?? false {
-                                url = url.withQueryParams([
-                                    URLQueryItem(name: "forceExperiment", value: "generalizedReactApp"),
-                                    URLQueryItem(name: "forceExperimentGroup", value: "react")
-                                ])
-                            }
-                            self.baseURL = url
-                            completion(self.makeRequest(url), .emailLogin)
-                        }
-                    }
-                case let .qrCode(url), let .pairingV2(url):
+                switch result {
+                case .success(let url):
                     self.baseURL = url
-                    completion(self.makeRequest(url), .qrPairing)
-                case .settingsPage:
-                    if case .success(let url) = result {
-                        self.baseURL = url
-                        completion(self.makeRequest(url), nil)
-                    }
+                    completion(self.makeRequest(url), nil)
+                case .failure(let error):
+                    self.logger.log("Could not open the account settings page",
+                                    level: .warning,
+                                    category: .sync,
+                                    description: String(describing: error))
                 }
             }
         }

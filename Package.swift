@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "Danger",
-    platforms: [.iOS("15"), .macOS("11")],
+    platforms: [.macOS("11")],
     products: [
         .library(name: "DangerDeps", type: .dynamic, targets: ["DangerDependencies"]), // dev
     ],

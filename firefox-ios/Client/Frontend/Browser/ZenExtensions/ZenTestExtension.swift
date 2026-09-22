@@ -15,12 +15,12 @@ enum ZenTestExtension {
     private static let manifest = """
     {
       "manifest_version": 3,
-      "name": "Zen Test Extension",
+      "name": "Ensō Test Extension",
       "version": "1.0",
       "description": "Shows a banner on every page and counts open tabs.",
       "permissions": ["tabs"],
       "host_permissions": ["<all_urls>"],
-      "action": { "default_title": "Zen Test Extension" },
+      "action": { "default_title": "Ensō Test Extension" },
       "background": { "service_worker": "background.js" },
       "content_scripts": [
         { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_idle" }
@@ -49,7 +49,7 @@ enum ZenTestExtension {
     private static let content = """
     (async () => {
       const banner = document.createElement("div");
-      banner.textContent = "Zen extension active";
+      banner.textContent = "Ensō extension active";
       banner.style.cssText = [
         "position:fixed", "top:0", "left:0", "right:0", "z-index:2147483647",
         "background:#7542e4", "color:#fff", "font:600 14px -apple-system,sans-serif",
@@ -58,9 +58,9 @@ enum ZenTestExtension {
       document.documentElement.appendChild(banner);
       try {
         const count = await browser.runtime.sendMessage("tabCount");
-        banner.textContent = `Zen extension active - ${count} tab(s)`;
+        banner.textContent = `Ensō extension active - ${count} tab(s)`;
       } catch (error) {
-        banner.textContent = `Zen extension active - no background (${error})`;
+        banner.textContent = `Ensō extension active - no background (${error})`;
       }
     })();
     """

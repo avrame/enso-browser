@@ -27,6 +27,8 @@ final class ZenWebExtensions: NSObject {
     /// Whether the toolbar has anything to show a button for.
     var hasExtensions: Bool { !controller.extensionContexts.isEmpty }
 
+    var installedCount: Int { controller.extensionContexts.count }
+
     /// The badge for the toolbar button: the first extension that sets one
     /// for the selected tab.
     var toolbarBadge: String? {

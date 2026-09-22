@@ -416,7 +416,8 @@ class AppSettingsTableViewController: SettingsTableViewController,
         }
 
         generalSettings += [
-            SiriPageSetting(settings: self, settingsDelegate: parentCoordinator)
+            SiriPageSetting(settings: self, settingsDelegate: parentCoordinator),
+            ExtensionsSetting(title: NSAttributedString(string: "Extensions"))
         ]
 
         return [SettingSection(title: NSAttributedString(string: .SettingsGeneralSectionTitle),
@@ -526,7 +527,6 @@ class AppSettingsTableViewController: SettingsTableViewController,
     private func getDebugSettings() -> [SettingSection] {
         var hiddenDebugOptions = [
             ZenSpacesDebugSetting(settings: self),
-            ZenExtensionsDebugSetting(settings: self),
             ExperimentsSettings(settings: self, settingsDelegate: self),
             ExportLogDataSetting(settings: self),
             ExportBrowserDataSetting(settings: self),

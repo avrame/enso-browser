@@ -14,7 +14,7 @@ xcuserdata
 *.xccheckout
 *.moved-aside
 DerivedData
-.swiftpm/
+/.swiftpm/xcode/xcshareddata/xcschemes/Danger.xcscheme
 *.hmap
 *.ipa
 *.xcuserstate

@@ -21,6 +21,7 @@ final class ZenWebExtensions: NSObject {
     /// Tabs already announced to WebKit. Extension APIs reject a web view
     /// whose tab it has never seen.
     private var knownTabs = Set<ObjectIdentifier>()
+    private var activeTab: ObjectIdentifier?
     /// Packages in the store that would not load, for the settings screen.
     private(set) var failures: [LoadFailure] = []
 
@@ -145,10 +146,29 @@ final class ZenWebExtensions: NSObject {
         }
     }
 
-    private func registerExistingTabs() {
+    /// `announceActiveTab` forces the activation through even when the same
+    /// tab is already the active one, which a context loaded mid-session has
+    /// no way of knowing.
+    private func registerExistingTabs(announceActiveTab: Bool = false) {
         for tab in window?.tabs ?? [] where !tab.isPrivate {
             register(tab)
         }
+        activateSelectedTab(force: announceActiveTab)
+    }
+
+    /// Tells the controller which tab is being looked at right now.
+    ///
+    /// `didActivateTab` otherwise only fires when the selection *changes*, so
+    /// an extension installed while a tab was already open never learned there
+    /// was an active tab at all: the badge still counted, because that does
+    /// not need one, but the popup opened on "not a website" until the user
+    /// happened to switch tabs.
+    private func activateSelectedTab(force: Bool = false) {
+        guard let selected = window?.tabManager?.selectedTab, !selected.isPrivate else { return }
+        register(selected)
+        guard force || activeTab != ObjectIdentifier(selected) else { return }
+        activeTab = ObjectIdentifier(selected)
+        controller.didActivateTab(selected, previousActiveTab: nil)
     }
 
     private func register(_ tab: Tab) {
@@ -203,6 +223,9 @@ final class ZenWebExtensions: NSObject {
             await reload(context)
         }
         await window?.restartWebViews()
+        // A context loaded mid-session has missed every tab event so far,
+        // including which tab is in front.
+        registerExistingTabs(announceActiveTab: true)
         return context
     }
 
@@ -356,6 +379,7 @@ extension ZenWebExtensions: TabManagerDelegate {
                     isRestoring: Bool) {
         guard !selectedTab.isPrivate else { return }
         register(selectedTab)
+        activeTab = ObjectIdentifier(selectedTab)
         controller.didActivateTab(selectedTab, previousActiveTab: previousTab)
     }
 }

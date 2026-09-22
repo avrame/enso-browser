@@ -62,4 +62,9 @@ if [ "$current_tracked_branch" = "main" ]; then
   fi
 fi
 
+echo "Checking Ensō's changes survived..."
+if ! python3 "$REPO_ROOT/scripts/enso-guard.py"; then
+    exit 1
+fi
+
 exit 0

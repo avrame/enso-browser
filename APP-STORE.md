@@ -115,7 +115,7 @@ Worth reading Apple's current guidance before filling the form in.
 1. **Tip jar products.** The three consumables must exist in App Store Connect
    under the ids in `TipJar.productIDs` or the screen shows its unreachable
    state.
-2. **Screenshots.** None exist yet. See below.
+2. **iPad screenshots**, or dropping iPad from the target. See below.
 3. **The app privacy answer** above, which needs deciding rather than
    defaulting.
 
@@ -126,17 +126,8 @@ hosted copy identical to the one the app ships.
 
 ## Screenshots
 
-Required: 6.9" iPhone, plus iPad if iPad stays in the target. The simulator we
-have (`Enso iOS 27`) is an iPhone 17 and is *not* one of the accepted sizes —
-an iPhone 17 Pro Max simulator is.
+Five are taken, at 1320 × 2868 — Apple's 6.9" iPhone size — in
+`screenshots/app-store/`, with a README covering what each one shows and how
+to retake it.
 
-Worth showing, in order:
-
-1. The spaces sheet with real spaces in it — the one thing no other iOS browser
-   can show. Needs a signed-in account with spaces.
-2. A page with uBlock Origin's popup open and the toolbar badge showing.
-3. The extensions list with an extension installed.
-4. The homepage, showing no sponsored tile.
-5. Settings, showing the absent telemetry switches.
-
-The first two carry the listing. The rest are support.
+Still missing: **iPad**, which the target commits us to. See the note above.

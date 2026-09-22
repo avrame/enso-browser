@@ -39,6 +39,12 @@ CODE_SIGN_STYLE = Automatic
 CODE_SIGN_IDENTITY = Apple Development
 DEVELOPMENT_TEAM =
 
+// iPhone only. The spaces sheet and the toolbar were designed for a phone and
+// have never been looked at on a tablet, and shipping a stretched phone layout
+// into an iPad review is a worse outcome than not claiming iPad at all. Adding
+// it back is a deliberate piece of work, not a build setting.
+TARGETED_DEVICE_FAMILY = 1
+
 INCLUDE_SETTINGS_BUNDLE = YES
 CHANNEL = developer
 OTHER_SWIFT_FLAGS = $(OTHER_SWIFT_FLAGS_common) -DMOZ_CHANNEL_$(CHANNEL)

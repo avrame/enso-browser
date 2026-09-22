@@ -89,10 +89,11 @@ does.
 must answer yes, which forces the highest bracket — the same one Chrome and
 Firefox carry. There is no way around it and no reason to want one.
 
-**iPad.** The app builds for iPhone and iPad (`TARGETED_DEVICE_FAMILY = 1,2`),
-so Apple will review it on iPad and require iPad screenshots. If the iPad
-layout has not been looked at, either look at it or drop iPad from the target
-before submitting.
+**iPhone only.** The Enso configuration sets `TARGETED_DEVICE_FAMILY = 1`, so
+Apple reviews it on iPhone and asks for no iPad screenshots. The spaces sheet
+and the toolbar were built for a phone and have never been looked at on a
+tablet; claiming iPad would have meant shipping a stretched phone layout into
+review. Adding iPad back is a piece of design work, not a build setting.
 
 ## App privacy — needs a decision, not a guess
 
@@ -115,8 +116,7 @@ Worth reading Apple's current guidance before filling the form in.
 1. **Tip jar products.** The three consumables must exist in App Store Connect
    under the ids in `TipJar.productIDs` or the screen shows its unreachable
    state.
-2. **iPad screenshots**, or dropping iPad from the target. See below.
-3. **The app privacy answer** above, which needs deciding rather than
+2. **The app privacy answer** above, which needs deciding rather than
    defaulting.
 
 Done: the repository is `avrame/enso-browser` and `SupportUtils.URLForGetHelp`

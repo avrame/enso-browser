@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guards the two Ensō changes that upstream can silently undo.
+"""Guards the Ensō changes that can be silently undone.
 
 Both failures are quiet ones: nothing crashes, nothing looks wrong in a diff,
 and the browser just starts telling people something untrue again.
@@ -13,6 +13,11 @@ and the browser just starts telling people something untrue again.
            it must not follow Ensō's own version. Upstream bumps the real one
            every release, and a pin nobody notices going stale is a lie about
            which engine is running.
+
+  legal    The privacy notice and terms are published twice: inside the app,
+           and under docs/ where the App Store listing points. Editing one
+           side alone leaves the published notice disagreeing with the one
+           people actually agreed to.
 
 Run with --update after intentionally rewording a locked string, or after a
 sync that legitimately bumps the Firefox version.
@@ -131,6 +136,24 @@ def check_strings():
     return problems
 
 
+def check_legal():
+    """The hosted documents must be the ones the app ships.
+
+    App Store Connect points at the copies under docs/, and someone editing
+    either side alone would leave the published privacy notice disagreeing
+    with the one people agreed to in the app.
+    """
+    problems = []
+    for name, shipped in [("privacy.html", "Privacy.html"), ("terms.html", "Terms.html")]:
+        web = ROOT / "docs" / name
+        app = ROOT / "firefox-ios/Client/Frontend/Browser/ZenLegal" / shipped
+        if not web.exists():
+            problems.append(f"docs/{name} is missing, but the App Store listing points at it")
+        elif web.read_bytes() != app.read_bytes():
+            problems.append(f"docs/{name} no longer matches the {shipped} the app ships")
+    return problems
+
+
 def check_version():
     xcconfig = re.search(r"^APP_VERSION\s*=\s*(\S+)",
                          VERSION_XCCONFIG.read_text(encoding="utf-8"), re.M)
@@ -150,9 +173,9 @@ def main():
         update()
         return 0
 
-    problems = check_version() + check_strings()
+    problems = check_version() + check_legal() + check_strings()
     if problems:
-        print("Ensō guard found changes upstream undid:\n", file=sys.stderr)
+        print("Ensō guard found problems:\n", file=sys.stderr)
         for problem in problems:
             print(f"  - {problem}", file=sys.stderr)
         print("\nFix them, or run scripts/enso-guard.py --update if the change was "

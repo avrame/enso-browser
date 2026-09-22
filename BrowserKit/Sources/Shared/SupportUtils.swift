@@ -19,7 +19,7 @@ public struct SupportUtils {
     /// Where Ensō is actually developed, and where a problem with it can
     /// usefully be reported.
     public static var URLForGetHelp: URL? {
-        return URL(string: "https://github.com/avrame/firefox-ios/issues")
+        return URL(string: "https://github.com/avrame/enso-browser/issues")
     }
 
     public static var URLForPocketLearnMore: URL? {

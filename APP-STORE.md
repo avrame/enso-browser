@@ -83,7 +83,7 @@ does.
 | Price | Free, with non-consumable tips |
 | Support URL | https://github.com/avrame/enso-browser/issues |
 | Marketing URL | *(optional — leave blank until there is a site)* |
-| Privacy Policy URL | **blocked, see below** |
+| Privacy Policy URL | https://avrame.github.io/enso-browser/privacy.html |
 
 **Age rating.** The questionnaire asks about unrestricted web access. A browser
 must answer yes, which forces the highest bracket — the same one Chrome and
@@ -112,20 +112,17 @@ Worth reading Apple's current guidance before filling the form in.
 
 ## Blockers
 
-1. **Privacy Policy URL.** App Store Connect requires a publicly reachable URL.
-   Ours is bundled in the app at `enso://about/privacy` and nowhere else. It
-   needs hosting — GitHub Pages off this repo is enough.
-2. **Contact address.** `Terms.html` and `Privacy.html` both still say
-   `[YOUR CONTACT ADDRESS]`. Shipping legal documents with a placeholder in
-   them is worse than having none.
-3. **Tip jar products.** The three consumables must exist in App Store Connect
+1. **Tip jar products.** The three consumables must exist in App Store Connect
    under the ids in `TipJar.productIDs` or the screen shows its unreachable
    state.
-4. **Repo name.** Support and source links point at `avrame/firefox-ios`. For a
-   browser whose listing carefully says it is not Firefox, a support link to a
-   repo called firefox-ios undercuts the point. Rename it to `enso-browser` and
-   update `SupportUtils.URLForGetHelp`.
-5. **Screenshots.** None exist yet. See below.
+2. **Screenshots.** None exist yet. See below.
+3. **The app privacy answer** above, which needs deciding rather than
+   defaulting.
+
+Done: the repository is `avrame/enso-browser` and `SupportUtils.URLForGetHelp`
+follows it; the legal documents carry a real contact; and the privacy notice is
+published at the URL in the table above, with `enso-guard.py` keeping the
+hosted copy identical to the one the app ships.
 
 ## Screenshots
 

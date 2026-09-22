@@ -31,7 +31,7 @@ final class TopSitesSettingsViewController: SettingsTableViewController, UserFea
         var sections: [SettingSection] = []
 
         if let profile {
-            let toggleSettings = [
+            var toggleSettings = [
                 BoolSetting(
                     prefs: profile.prefs,
                     theme: themeManager.getCurrentTheme(for: windowUUID),
@@ -46,8 +46,12 @@ final class TopSitesSettingsViewController: SettingsTableViewController, UserFea
                             actionType: TopSitesActionType.toggleShowSectionSetting
                         )
                     )
-                },
-                BoolSetting(
+                }
+            ]
+
+            // A switch for shortcuts the browser never asks for would be a lie.
+            if EnsoSponsoredShortcuts.areOffered {
+                toggleSettings.append(BoolSetting(
                     prefs: profile.prefs,
                     theme: themeManager.getCurrentTheme(for: windowUUID),
                     prefKey: PrefsKeys.FeatureFlags.SponsoredShortcuts,
@@ -69,8 +73,8 @@ final class TopSitesSettingsViewController: SettingsTableViewController, UserFea
                        let contextId = TelemetryContextualIdentifier.contextId {
                         self?.deleteUserRequest(contextId: contextId)
                     }
-                }
-            ]
+                })
+            }
             let toggleSection = SettingSection(title: nil, children: toggleSettings)
             sections.append(toggleSection)
         }

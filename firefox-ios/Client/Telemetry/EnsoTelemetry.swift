@@ -33,3 +33,17 @@ enum EnsoTelemetry {
 enum EnsoSuggest {
     static let usesMozillaSuggest = false
 }
+
+/// Whether the homepage carries sponsored shortcuts.
+///
+/// These are a separate arrangement from Suggest - a different service, fetched
+/// from Mozilla's ad provider and reported back with impressions and clicks -
+/// but the objection is the same one: the money is Mozilla's to take and not
+/// ours, and a homepage that reports what its shortcuts showed you sits badly
+/// beside a privacy notice promising nothing is collected.
+///
+/// Your own most-visited sites still fill the row. Those come from history on
+/// the device.
+enum EnsoSponsoredShortcuts {
+    static let areOffered = false
+}

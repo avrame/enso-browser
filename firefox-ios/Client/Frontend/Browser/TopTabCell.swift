@@ -106,7 +106,7 @@ class TopTabCell: UICollectionViewCell, ThemeApplicable, ReusableCell {
             favicon.setFavicon(FaviconImageViewModel(siteURLString: siteURL,
                                                      faviconCornerRadius: UX.faviconCornerRadius))
         } else {
-            favicon.manuallySetImage(UIImage(named: ImageIdentifiers.firefoxFavicon) ?? UIImage())
+            favicon.manuallySetImage(UIImage(named: ImageIdentifiers.ensoFavicon) ?? UIImage())
         }
     }
 

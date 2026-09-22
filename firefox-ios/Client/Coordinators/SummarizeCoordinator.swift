@@ -87,7 +87,7 @@ final class SummarizeCoordinator: BaseCoordinator,
         let brandImage: UIImage? = if summarizerNimbusUtils.isAppleSummarizerEnabled() {
             UIImage(named: "appleIntelligence")
         } else {
-            UIImage(named: "faviconFox")
+            UIImage(named: "faviconEnso")
         }
 
         let errorModel = LocalizedErrorsViewConfiguration(

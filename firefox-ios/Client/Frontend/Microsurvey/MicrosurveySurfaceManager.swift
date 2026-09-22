@@ -32,6 +32,11 @@ class MicrosurveySurfaceManager: MicrosurveyManager {
     /// Checks whether a message exists, and is not expired, and attempts to
     /// build a `MicrosurveyPromptView` to be presented.
     func showMicrosurveyPrompt() -> MicrosurveyModel? {
+        // A microsurvey asks Ensō's users what they think of Firefox, under
+        // Ensō's name, and reports the answer to Mozilla. Nobody here has a
+        // relationship with Mozilla to be surveyed about, and the answers
+        // would go where nothing else does.
+        guard EnsoTelemetry.reportsUsageData else { return nil }
         retrieveMessage()
         guard let message else { return nil }
         let surveyQuestion = message.text

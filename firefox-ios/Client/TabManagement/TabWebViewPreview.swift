@@ -67,7 +67,7 @@ final class TabWebViewPreview: UIView, ThemeApplicable {
         guard let tab else {
             faviconImageView.isHidden = false
             webPageScreenshotImageView.isHidden = true
-            faviconImageView.image = UIImage(resource: .faviconFox)
+            faviconImageView.image = UIImage(resource: .faviconEnso)
             return
         }
 
@@ -76,7 +76,7 @@ final class TabWebViewPreview: UIView, ThemeApplicable {
 
         if layoutWasInvalidated {
             if tab.isFxHomeTab {
-                faviconImageView.manuallySetImage(UIImage(resource: .faviconFox))
+                faviconImageView.manuallySetImage(UIImage(resource: .faviconEnso))
             } else {
                 faviconImageView.setFavicon(FaviconImageViewModel(siteURLString: tab.url?.absoluteString,
                                                                   faviconCornerRadius: UX.faviconCornerRadius))

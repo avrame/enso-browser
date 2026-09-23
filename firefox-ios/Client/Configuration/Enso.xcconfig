@@ -26,6 +26,12 @@ APP_VERSION = 1.0
 // rejected if they disagree.
 CURRENT_PROJECT_VERSION = 2
 
+// The Enso configurations were cloned from Debug, which emits DWARF without a
+// dSYM. Uploads then warn that symbols are missing, and the crash reports
+// Apple collects arrive as raw addresses - which, since Ensō has no crash
+// reporting of its own, would be the only crash information there is.
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+
 // The app group and the keychain access group are both derived from this at
 // runtime, in AppInfo, so this line is the one that has to change - see
 // EnsoApplication.entitlements, which has to agree with it.

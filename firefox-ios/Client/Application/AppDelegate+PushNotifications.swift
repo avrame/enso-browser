@@ -39,6 +39,11 @@ extension AppDelegate {
                                                        NotificationSurfaceManager.notificationCategory]
         UNUserNotificationCenter.current().setNotificationCategories(categories)
 
+        // The delegate and categories above serve local notifications too, so
+        // only the remote registration is skipped: without the entitlement it
+        // would do nothing but produce a failure callback.
+        guard EnsoPush.isEnabled else { return }
+
         NotificationCenter.default.addObserver(forName: .RegisterForPushNotifications, object: nil, queue: .main) { _ in
             Task { @MainActor in
                 let settings = await UNUserNotificationCenter.current().notificationSettings()

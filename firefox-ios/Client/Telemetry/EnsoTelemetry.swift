@@ -34,6 +34,22 @@ enum EnsoSuggest {
     static let usesMozillaSuggest = false
 }
 
+/// Whether this browser registers for remote push notifications.
+///
+/// Firefox uses push for one thing on iOS: receiving a tab sent from another
+/// device. Getting it means registering a device token with Mozilla's push
+/// service, which is a flow to Mozilla that the privacy notice does not
+/// mention, for a convenience Ensō can live without in its first release. The
+/// entitlement also has to be provisioned, and an entitlement nothing uses is
+/// one more thing for a reviewer to ask about.
+///
+/// Tabs you send *from* Ensō still arrive elsewhere; it is only the receiving
+/// end that is asleep. The NotificationService extension has nothing to do
+/// while this is off.
+enum EnsoPush {
+    static let isEnabled = false
+}
+
 /// Whether Ensō can be set as the default browser.
 ///
 /// iOS only offers the choice for apps holding

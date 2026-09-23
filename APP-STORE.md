@@ -12,13 +12,18 @@ a search for "enso" returns fifteen meditation and wellness apps. `Ensō
 Browser` says what it is and does not fight them for the word. The icon and the
 name inside the app stay `Ensō`.
 
-**Subtitle** (30 max) — `Zen spaces. Real extensions.` [28]
+**Subtitle** (30 max) — `Your Zen spaces, on iPhone` [26]
+
+Extensions are deliberately not in the subtitle. Installing one means finding
+a `.xpi`, getting it onto the device and adding it in Settings — a
+power-user job. Promising it in the first line someone reads sets them looking for an
+extension gallery they will not find.
 
 ## Promotional text (170 max)
 
 > Your Zen Browser spaces, on your phone — the same tabs, folders and split
-> views, synced through your Mozilla account. Plus real extensions, including
-> uBlock Origin. [162]
+> views, synced through your Mozilla account. No ads, no tracking, nothing
+> collected about you. [167]
 
 Promotional text can be changed without submitting a new build, so it is the
 right place for anything that moves.
@@ -32,10 +37,11 @@ right place for anything that moves.
 > them from the same Mozilla account Zen syncs with, so the phone opens on what
 > you left rather than a wall of unsorted tabs.
 >
-> It also runs real browser extensions. Not content blockers with a fixed list,
-> but actual WebExtensions you install from a file — uBlock Origin Lite among
-> them — with their toolbar buttons, popups and options pages working the way
-> they do everywhere else.
+> It can also run real browser extensions — actual WebExtensions, with their
+> toolbar buttons, popups and options pages working as they do everywhere
+> else. This part is for tinkerers: there is no extension gallery, and
+> installing one means finding the extension's file yourself and adding it in
+> Settings. uBlock Origin Lite works, if that sounds like you.
 >
 > AND IT IS QUIET
 >
@@ -66,7 +72,13 @@ right place for anything that moves.
 
 ## Keywords (100 max)
 
-> `spaces,tabs,sync,extensions,adblock,ad blocker,privacy,no ads,tracking,browser,web browser,tab group` [100]
+> `spaces,tabs,sync,folders,split view,extensions,privacy,no ads,tracking,browser,web browser,tab group` [100]
+
+`adblock` and `ad blocker` used to be here and are gone. Ensō has tracking
+protection, not an ad blocker, and the only real blocker is one the user
+supplies as a file — so those two words brought in people expecting something
+the app does not ship. `folders` and `split view` took their place and describe
+what it actually does.
 
 **Do not put `firefox`, `zen browser`, `ublock` or `mozilla` in the keyword
 field.** Apple's metadata rules forbid trademarked terms you do not own, and

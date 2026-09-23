@@ -320,7 +320,7 @@
 "Onboarding.Modern.BrandRefresh.TermsOfUse.Title.v148" = "Get ready to run free";
 
 /* Description for the Terms of Use card in the v148 brand refresh onboarding flow. */
-"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Built on Firefox, quieter. Your spaces follow you, and nothing follows you back.";
+"Onboarding.Modern.BrandRefresh.TermsOfUse.Description.v148" = "Your Zen spaces, on your phone.";
 
 /* Agreement text for Terms of Use in the v148 brand refresh onboarding flow. %@ is the Terms of Use link button that redirects the user to the Terms of Use page. */
 "Onboarding.Modern.BrandRefresh.TermsOfUse.TermsOfUseAgreement.v148" = "By continuing, you agree to the %@";

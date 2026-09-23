@@ -2021,7 +2021,7 @@ extension String {
                     /// writing about Mozilla's browser, and the translations of it
                     /// say the same thing in 478 languages. See Branding.
                     public static let Description =
-                        "Built on Firefox, quieter. Your spaces follow you, and nothing follows you back."
+                        "Your Zen spaces, on your phone."
                     public static let TermsOfUseAgreement = MZLocalizedString(
                         key: "Onboarding.Modern.BrandRefresh.TermsOfUse.TermsOfUseAgreement.v148",
                         tableName: "Onboarding",

@@ -614,7 +614,8 @@ final class BrowserCoordinator: BaseCoordinator,
                 self?.router.dismiss(animated: true) {
                     self?.presentZenSpacesSignIn()
                 }
-            })
+            },
+            onClose: { [weak self] in self?.router.dismiss(animated: true) })
         let controller = UIHostingController(rootView: sheet)
         if controller.shouldUseiPadSetup(), let sourceView {
             controller.modalPresentationStyle = .popover

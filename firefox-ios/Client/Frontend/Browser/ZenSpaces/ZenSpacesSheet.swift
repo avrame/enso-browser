@@ -87,6 +87,9 @@ struct ZenSpacesSheet: View {
     let onPinned: (TabRecord) -> Void
     /// Opens the account sign-in, for when there is no account to read from.
     var onSignIn: (() -> Void)?
+    /// Closes the sheet. Dragging it down works, but a sheet this tall means
+    /// reaching the top of the screen to do it.
+    var onClose: (() -> Void)?
 
     @AppStorage("zenSpaces.selectedSpace") private var selectedSpace = ""
     @State private var renaming: RenameRequest?
@@ -105,6 +108,9 @@ struct ZenSpacesSheet: View {
                 pages(snapshot)
                 spaceStrip(snapshot)
             } else {
+                // These states have no space header to hang it on, and they
+                // are exactly where someone is most likely to want out.
+                closeRow
                 emptyState
             }
             statusLine
@@ -309,11 +315,31 @@ struct ZenSpacesSheet: View {
                                  namingNewSpace = true
                              },
                              onOpen: onOpen,
-                             onRefresh: { await store.refresh() })
+                             onRefresh: { await store.refresh() },
+                             onClose: onClose)
                     .tag(space.record.uuid)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
+    }
+
+    @ViewBuilder
+    private var closeRow: some View {
+        if let onClose {
+            HStack {
+                Spacer()
+                Button(action: onClose) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close")
+            }
+            .padding(.horizontal, 36)
+            .padding(.top, 8)
+        }
     }
 
     /// Keeps the current space's icon in view as pages change.
@@ -468,6 +494,7 @@ private struct ZenSpacePage: View {
     let onNewSpace: () -> Void
     let onOpen: (TabRecord) -> Void
     let onRefresh: () async -> Void
+    let onClose: (() -> Void)?
 
     @State private var editMode: EditMode = .inactive
     @Environment(\.colorScheme) private var systemScheme
@@ -537,12 +564,26 @@ private struct ZenSpacePage: View {
                 pinButton(currentPage)
                     .fixedSize()
             }
+            if let onClose {
+                closeButton(onClose)
+            }
         }
         .padding(.horizontal, 36)
         .padding(.top, 8)
         .padding(.bottom, 4)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isHeader)
+    }
+
+    private func closeButton(_ close: @escaping () -> Void) -> some View {
+        Button(action: close) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.title2)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Close")
     }
 
     /// At the top of every space, so pinning never needs a scroll.

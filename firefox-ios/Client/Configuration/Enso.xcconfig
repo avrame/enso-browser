@@ -24,7 +24,7 @@ APP_VERSION = 1.0
 // build already uploaded for this version. Bump it for each upload; the
 // Info.plists all read it, so app and extensions stay in step - they are
 // rejected if they disagree.
-CURRENT_PROJECT_VERSION = 2
+CURRENT_PROJECT_VERSION = 3
 
 // The Enso configurations were cloned from Debug, which emits DWARF without a
 // dSYM. Uploads then warn that symbols are missing, and the crash reports

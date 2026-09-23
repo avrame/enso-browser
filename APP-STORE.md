@@ -124,6 +124,37 @@ follows it; the legal documents carry a real contact; and the privacy notice is
 published at the URL in the table above, with `enso-guard.py` keeping the
 hosted copy identical to the one the app ships.
 
+## Signing, and what it took
+
+Automatic signing needs every App ID to exist before Xcode will stop falling
+back to the team's wildcard profile. A wildcard App ID cannot carry App
+Groups, Push or AutoFill, so the errors it produces name the capabilities
+rather than the real problem, which is the missing identifier.
+
+Registered at developer.apple.com (Certificates, Identifiers & Profiles - a
+different site from App Store Connect, which is the confusing part):
+
+| Identifier | Capabilities |
+| --- | --- |
+| `app.enso.browser` | App Groups, AutoFill Credential Provider |
+| `app.enso.browser.CredentialProvider` | App Groups, AutoFill Credential Provider |
+| `app.enso.browser.ActionExtension` | App Groups |
+| `app.enso.browser.NotificationService` | App Groups |
+| `app.enso.browser.ShareTo` | App Groups |
+| `app.enso.browser.WidgetKit` | App Groups |
+| `app.enso.browser.Sticker` | none |
+| `group.app.enso.browser` | the App Group itself |
+
+Three things cost an afternoon between them:
+
+- **Do not pin `CODE_SIGN_IDENTITY`.** Automatic signing picks Apple
+  Development to build and Apple Distribution to archive. Pinning it to
+  Development made Xcode hunt for a development profile while archiving.
+- **Push was not worth its trouble.** It blocked provisioning, and it only
+  buys receiving a sent tab. See `EnsoPush`.
+- **Clean Build Folder does not refresh profiles.** Xcode Settings →
+  Accounts → Download Manual Profiles does.
+
 ## Screenshots
 
 Five are taken, at 1320 × 2868 — Apple's 6.9" iPhone size — in

@@ -13,7 +13,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "app.enso.tip.small",
+      "productID" : "app.enso.tip.modest",
       "referenceName" : "Small Tip",
       "type" : "Consumable"
     },

@@ -33,8 +33,13 @@ final class TipJar: ObservableObject {
 
     /// These have to exist in App Store Connect as consumables, under exactly
     /// these identifiers, before any of them will load on a device.
+    ///
+    /// App Store Connect reserves an identifier permanently once it is used:
+    /// deleting the product does not release it. `.modest` is here rather than
+    /// `.small` because `.small` was spent and cannot be taken back. Treat
+    /// anything added below as one-way.
     static let productIDs = [
-        "app.enso.tip.small",
+        "app.enso.tip.modest",
         "app.enso.tip.medium",
         "app.enso.tip.large"
     ]

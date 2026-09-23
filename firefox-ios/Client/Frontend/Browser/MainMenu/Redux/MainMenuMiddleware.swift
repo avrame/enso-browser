@@ -136,7 +136,11 @@ final class MainMenuMiddleware {
             MainMenuAction(
                 windowUUID: action.windowUUID,
                 actionType: MainMenuMiddlewareActionType.updateBannerVisibility,
-                isBrowserDefault: DefaultBrowserUtility().isDefaultBrowser
+                // The banner invites people to make Ensō their default. Without
+                // the entitlement iOS offers no such option, so we report the
+                // question as already settled rather than ask it.
+                isBrowserDefault: !EnsoDefaultBrowser.canBeDefault
+                    || DefaultBrowserUtility().isDefaultBrowser
             )
         )
     }

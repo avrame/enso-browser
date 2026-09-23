@@ -34,6 +34,20 @@ enum EnsoSuggest {
     static let usesMozillaSuggest = false
 }
 
+/// Whether Ensō can be set as the default browser.
+///
+/// iOS only offers the choice for apps holding
+/// `com.apple.developer.web-browser`, which Apple grants by request. Until
+/// that request is approved the entitlement is not in the build, so every
+/// invitation to "set Ensō as your default" leads to a Settings page with no
+/// such option on it - a button that cannot do what it says.
+///
+/// Turn this on in the same change that adds the entitlement back to
+/// EnsoApplication.entitlements, not before.
+enum EnsoDefaultBrowser {
+    static let canBeDefault = false
+}
+
 /// Whether the homepage carries sponsored shortcuts.
 ///
 /// These are a separate arrangement from Suggest - a different service, fetched

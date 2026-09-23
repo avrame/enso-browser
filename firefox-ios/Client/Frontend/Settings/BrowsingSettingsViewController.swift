@@ -34,6 +34,9 @@ final class BrowsingSettingsViewController: SettingsTableViewController, Feature
     }
 
     private func getDefaultBrowserSetting() -> [SettingSection] {
+        // Inviting someone to a choice iOS will not offer them is worse than
+        // staying quiet about it.
+        guard EnsoDefaultBrowser.canBeDefault else { return [] }
         let footerTitle = NSAttributedString(
             string: String.FirefoxHomepage.HomeTabBanner.EvergreenMessage.HomeTabBannerDescription)
 

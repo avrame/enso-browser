@@ -35,8 +35,11 @@ CODE_SIGN_ENTITLEMENTS = Client/Entitlements/EnsoApplication.entitlements
 
 // Automatic, with no team written down: Xcode asks once in Signing &
 // Capabilities and records whichever team the developer actually has.
+// No CODE_SIGN_IDENTITY here on purpose. Automatic signing picks Apple
+// Development for a build and Apple Distribution for an archive; pinning it to
+// Development makes Xcode hunt for a development profile while archiving, and
+// fail.
 CODE_SIGN_STYLE = Automatic
-CODE_SIGN_IDENTITY = Apple Development
 DEVELOPMENT_TEAM =
 
 // iPhone only. The spaces sheet and the toolbar were designed for a phone and

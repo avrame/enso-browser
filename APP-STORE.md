@@ -33,9 +33,9 @@ right place for anything that moves.
 > you left rather than a wall of unsorted tabs.
 >
 > It also runs real browser extensions. Not content blockers with a fixed list,
-> but actual WebExtensions installed from a file — uBlock Origin Lite included
-> — with their toolbar buttons, popups and options pages working the way they
-> do everywhere else.
+> but actual WebExtensions you install from a file — uBlock Origin Lite among
+> them — with their toolbar buttons, popups and options pages working the way
+> they do everywhere else.
 >
 > AND IT IS QUIET
 >

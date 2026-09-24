@@ -136,6 +136,41 @@ follows it; the legal documents carry a real contact; and the privacy notice is
 published at the URL in the table above, with `enso-guard.py` keeping the
 hosted copy identical to the one the app ships.
 
+## Roadmap
+
+### An extension gallery
+
+Not in 1.0, and deliberately so. The listing above promises no gallery
+precisely because there is not one; if this ships, the subtitle, the
+promotional text and the description's extensions paragraph all have to be
+revisited together, and the keywords reconsidered.
+
+The mechanics are the small part. `ZenWebExtensions.install(...)` already takes
+an extension and loads it, so a gallery only changes where the file comes from:
+download an `.xpi` to a temporary URL and hand that to the same code, behind a
+search field and a list. Three things actually decide it.
+
+**The catalog.** AMO's read API (`/api/v5/addons/search/`) needs no key and no
+agreement. The filter that matters is Android compatibility - a curated few
+dozen rather than thousands, and the same set that works on a phone at all.
+Desktop extensions assume a pointer, a wide popup and APIs iOS does not have,
+so listing everything would mostly ship disappointment. The short list is the
+feature.
+
+**App Review.** Guideline 2.5.2 forbids downloading executable code, and this
+walks up to it. The argument for is real - `WKWebExtension` is Apple's own API
+and extensions run interpreted inside a web view - and other iOS browsers are
+reported to ship extension stores, which is worth confirming firsthand before
+relying on it. But an unknown solo app gets a stricter read than an established
+one, so treat the risk as real rather than a formality.
+
+**The unglamorous half.** Updates, a permission prompt per extension before it
+installs, and a compatibility check so nobody installs something that silently
+does nothing.
+
+Worth doing after 1.0 is through review, when a rejection costs a resubmit
+rather than the launch.
+
 ## Signing, and what it took
 
 Automatic signing needs every App ID to exist before Xcode will stop falling

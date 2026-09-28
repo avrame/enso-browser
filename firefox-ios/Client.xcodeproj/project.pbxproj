@@ -1301,6 +1301,7 @@
 		8AED23082D4012B8000FF624 /* MessageCardStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AED23072D4012B1000FF624 /* MessageCardStateTests.swift */; };
 		8AED23C527AC1F9500DE7E97 /* BaseAlphaStackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AED23C427AC1F9500DE7E97 /* BaseAlphaStackView.swift */; };
 		8AED868328CA3B3400351A50 /* BookmarkPanelViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AED868228CA3B3400351A50 /* BookmarkPanelViewModelTests.swift */; };
+		2E4E00000000000000000102 /* BookmarksViewControllerDropTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4E00000000000000000101 /* BookmarksViewControllerDropTests.swift */; };
 		8AEDB11529F9F00400F2A53B /* SceneContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEDB11429F9F00400F2A53B /* SceneContainer.swift */; };
 		8AEE284B276A973400C7104D /* RatingPromptManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEE284A276A973400C7104D /* RatingPromptManagerTests.swift */; };
 		8AEE62C92756BA34003207D1 /* LoginsHelper.js in Resources */ = {isa = PBXBuildFile; fileRef = 8AEE62C62756BA34003207D1 /* LoginsHelper.js */; };
@@ -10310,6 +10311,7 @@
 		8AED23072D4012B1000FF624 /* MessageCardStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageCardStateTests.swift; sourceTree = "<group>"; };
 		8AED23C427AC1F9500DE7E97 /* BaseAlphaStackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseAlphaStackView.swift; sourceTree = "<group>"; };
 		8AED868228CA3B3400351A50 /* BookmarkPanelViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkPanelViewModelTests.swift; sourceTree = "<group>"; };
+		2E4E00000000000000000101 /* BookmarksViewControllerDropTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksViewControllerDropTests.swift; sourceTree = "<group>"; };
 		8AEDB11429F9F00400F2A53B /* SceneContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneContainer.swift; sourceTree = "<group>"; };
 		8AEDFE832C9DAB9C00821359 /* FennecTesting.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = FennecTesting.xcconfig; sourceTree = "<group>"; };
 		8AEE284A276A973400C7104D /* RatingPromptManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RatingPromptManagerTests.swift; sourceTree = "<group>"; };
@@ -12892,6 +12894,7 @@
 				0B7CF8862CAC1C4E00DC02F8 /* DefaultFolderHierarchyFetcherTests.swift */,
 				0B7FC3D12CAE811B005C5CCE /* DefaultBookmarksSaverTests.swift */,
 				8AED868228CA3B3400351A50 /* BookmarkPanelViewModelTests.swift */,
+				2E4E00000000000000000101 /* BookmarksViewControllerDropTests.swift */,
 				0B7CF8842CAC1B7000DC02F8 /* Legacy */,
 				21EEAA1A2D3AE3B300595119 /* BookmarksTelemetryTests.swift */,
 			);
@@ -21336,6 +21339,7 @@
 				8A454D372CB86B86009436D9 /* MerinoStateTests.swift in Sources */,
 				ED70CD812CE3BD2C0018761B /* MockStoreForMiddleware.swift in Sources */,
 				8AED868328CA3B3400351A50 /* BookmarkPanelViewModelTests.swift in Sources */,
+				2E4E00000000000000000102 /* BookmarksViewControllerDropTests.swift in Sources */,
 				434CD57829F6FC4500A0D04B /* MockAppAuthenticator.swift in Sources */,
 				8A94418A2CE3E190007FF4E5 /* MockSearchEngineManager.swift in Sources */,
 				DACDE996225E537900C8F37F /* VersionSettingTests.swift in Sources */,

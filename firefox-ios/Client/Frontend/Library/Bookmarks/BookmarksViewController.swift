@@ -35,6 +35,12 @@ final class BookmarksViewController: SiteTableViewController,
     private let bookmarksTelemetry = BookmarksTelemetry()
     private weak var previousInteractivePopGestureDelegate: (any UIGestureRecognizerDelegate)?
 
+    // MARK: - Drag and drop state
+    /// Held for the length of a drag so the drop hint and the drop proposal agree on
+    /// what is eligible, rather than each deciding for itself.
+    private(set) var draggedNode: FxBookmarkNode?
+    private var isDragSessionActive = false
+
     // MARK: - Search Properties
     var keyboardState: KeyboardState?
 
@@ -632,6 +638,7 @@ final class BookmarksViewController: SiteTableViewController,
             if currentTheme().isNova {
                 cell.editingAccessoryView?.tintColor = currentTheme().colors.textSecondary
             }
+            applyDropHint(to: cell, at: indexPath, animated: false)
             return cell
         } else {
             if let cell = tableView.dequeueReusableCell(withIdentifier: SeparatorTableViewCell.cellIdentifier,
@@ -734,25 +741,85 @@ final class BookmarksViewController: SiteTableViewController,
     override func tableView(_ tableView: UITableView,
                             itemsForBeginning session: any UIDragSession,
                             at indexPath: IndexPath) -> [UIDragItem] {
+        draggedNode = viewModel.displayedBookmarkNodes[safe: indexPath.row]
+
         let item = UIDragItem(itemProvider: NSItemProvider())
         item.localObject = indexPath
 
         return [item]
     }
 
+    override func tableView(_ tableView: UITableView, dragSessionWillBegin session: any UIDragSession) {
+        super.tableView(tableView, dragSessionWillBegin: session)
+        setDropHintsActive(true)
+    }
+
+    func tableView(_ tableView: UITableView, dragSessionDidEnd session: any UIDragSession) {
+        setDropHintsActive(false)
+    }
+
+    /// Split out from the drag delegate so the hint can be exercised without a live
+    /// `UIDragSession`, which cannot be constructed in a test.
+    func setDropHintsActive(_ isActive: Bool, draggedNode: FxBookmarkNode? = nil) {
+        isDragSessionActive = isActive
+        self.draggedNode = isActive ? (draggedNode ?? self.draggedNode) : nil
+        setDropHints(animated: isActive)
+    }
+
     func tableView(_ tableView: UITableView,
                    dropSessionDidUpdate session: UIDropSession,
                    withDestinationIndexPath destinationIndexPath: IndexPath?) -> UITableViewDropProposal {
-        guard let destinationIndex = destinationIndexPath?.row,
-              let sourceIndex = (session.localDragSession?.items[safe: 0]?.localObject as? IndexPath)?.row,
-              let destinationFolder = viewModel.displayedBookmarkNodes[safe: destinationIndex],
-              let sourceNode = viewModel.displayedBookmarkNodes[safe: sourceIndex],
-              destinationFolder.type == .folder,
-              sourceNode.type == .bookmark || sourceNode.type == .folder,
-              sourceNode.guid != destinationFolder.guid else {
+        guard let destinationIndexPath, isDropTarget(at: destinationIndexPath) else {
             return UITableViewDropProposal(operation: .move, intent: .insertAtDestinationIndexPath)
         }
         return UITableViewDropProposal(operation: .move, intent: .automatic)
+    }
+
+    // MARK: - Drop hints
+
+    /// A drag lands on `destination` when it is a real folder other than the node being
+    /// dragged. The `LocalDesktopFolder` aggregate row reports itself as a folder, but its
+    /// guid is local and never synced, so re-parenting onto it would write a parent that
+    /// does not exist. Its children are excluded by guid rather than by type because they
+    /// are the same class carrying real root guids, and those are valid destinations.
+    static func canDrop(_ source: FxBookmarkNode, onto destination: FxBookmarkNode) -> Bool {
+        guard source.type == .bookmark || source.type == .folder,
+              destination.type == .folder,
+              destination.guid != LocalDesktopFolder.localDesktopFolderGuid,
+              destination.guid != source.guid
+        else { return false }
+        return true
+    }
+
+    private func isDropTarget(at indexPath: IndexPath) -> Bool {
+        guard let draggedNode,
+              let node = viewModel.displayedBookmarkNodes[safe: indexPath.row]
+        else { return false }
+        return Self.canDrop(draggedNode, onto: node)
+    }
+
+    private func setDropHints(animated: Bool) {
+        for cell in tableView.visibleCells {
+            guard let indexPath = tableView.indexPath(for: cell) else { continue }
+            applyDropHint(to: cell, at: indexPath, animated: animated)
+        }
+    }
+
+    /// Tints the folders that can receive the drag for as long as it lasts, so the
+    /// capability is visible on the first attempt rather than found by accident.
+    /// The restore color mirrors what `OneLineTableViewCell.applyTheme` sets, rather
+    /// than re-theming the whole cell and undoing the adjustments `cellForRowAt` makes.
+    private func applyDropHint(to cell: UITableViewCell, at indexPath: IndexPath, animated: Bool) {
+        guard let cell = cell as? OneLineTableViewCell else { return }
+        let colors = currentTheme().colors
+        let isTarget = isDragSessionActive && isDropTarget(at: indexPath)
+        let apply = { cell.backgroundColor = isTarget ? colors.layerAccentNonOpaque : colors.layer5 }
+
+        if animated {
+            UIView.animate(withDuration: 0.2, animations: apply)
+        } else {
+            apply()
+        }
     }
 
     /// Called when a user is in Edit mode and drags and drops a bookmark into a folder. Updates the bookmark's parent folder
